@@ -442,7 +442,10 @@ export default function Home() {
   // a one-off task scheduled for a future date, or a recurring occurrence not
   // yet due, stays hidden until its date arrives.
   const dueTodayOrEarlier = items.filter((i) => !i.project_id && (!i.due_date || i.due_date <= todayStr));
-  const operationalItems = dueTodayOrEarlier.filter((i) => !i.recurrence_id);
+  // A recurring task due today belongs in both "Tarefas de hoje" (it's
+  // actionable today, same as any one-off task) and "Tarefas recorrentes"
+  // (it's part of a series) — intentional overlap, not a bug.
+  const todayItems = dueTodayOrEarlier;
   const recurringItems = dueTodayOrEarlier.filter((i) => i.recurrence_id);
 
   const tasksByProject = new Map<string, RoutineItem[]>();
@@ -455,7 +458,7 @@ export default function Home() {
   const dailyItemsForStats = items.filter((i) => !i.project_id);
   const stats = computeStats(dailyItemsForStats, now);
   const visibility = sectionVisibility(filter);
-  const visibleOperational = filterByTag(filterRoutineItems(operationalItems, filter, now), activeTagId);
+  const visibleToday = filterByTag(filterRoutineItems(todayItems, filter, now), activeTagId);
   const visibleRecurring = filterByTag(filterRoutineItems(recurringItems, filter, now), activeTagId);
   const visibleProjects = activeTagId ? [] : filterProjects(projects, filter, now);
   const showProjectsSection = visibility.projects && !activeTagId;
@@ -496,8 +499,9 @@ export default function Home() {
               <section className="flex flex-col gap-3">
                 <h2 className="text-sm font-semibold text-foreground">Tarefas de hoje</h2>
                 <TaskList
-                  items={visibleOperational}
+                  items={visibleToday}
                   now={now}
+                  recurrences={recurrences}
                   allTags={tags}
                   onCreateTag={handleCreateTag}
                   onToggle={handleToggle}

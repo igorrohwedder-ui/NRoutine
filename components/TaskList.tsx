@@ -1,6 +1,7 @@
 import { Sparkles } from "lucide-react";
-import type { Priority, RoutineItem, Tag } from "@/lib/types";
+import type { Priority, Recurrence, RoutineItem, Tag } from "@/lib/types";
 import { isOverdue } from "@/lib/taskStatus";
+import { describeRecurrence } from "@/lib/recurrence";
 import TaskItem, { type EditScope } from "./TaskItem";
 
 type Edits = {
@@ -13,6 +14,8 @@ type Edits = {
 type Props = {
   items: RoutineItem[];
   now: Date;
+  /** Used to show a recurrence badge on items that belong to a series. */
+  recurrences: Map<string, Recurrence>;
   allTags: Tag[];
   onCreateTag: (name: string) => Promise<Tag | null>;
   emptyMessage?: string;
@@ -30,7 +33,17 @@ function sortItems(items: RoutineItem[]) {
   });
 }
 
-export default function TaskList({ items, now, allTags, onCreateTag, emptyMessage, onToggle, onEdit, onDelete }: Props) {
+export default function TaskList({
+  items,
+  now,
+  recurrences,
+  allTags,
+  onCreateTag,
+  emptyMessage,
+  onToggle,
+  onEdit,
+  onDelete,
+}: Props) {
   if (items.length === 0) {
     return (
       <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-border bg-surface px-6 py-14 text-center">
@@ -45,18 +58,22 @@ export default function TaskList({ items, now, allTags, onCreateTag, emptyMessag
 
   return (
     <ul className="flex flex-col gap-2">
-      {sortItems(items).map((item) => (
-        <TaskItem
-          key={item.id}
-          item={item}
-          overdue={isOverdue(item, now)}
-          allTags={allTags}
-          onCreateTag={onCreateTag}
-          onToggle={onToggle}
-          onEdit={onEdit}
-          onDelete={onDelete}
-        />
-      ))}
+      {sortItems(items).map((item) => {
+        const rule = item.recurrence_id ? recurrences.get(item.recurrence_id) : undefined;
+        return (
+          <TaskItem
+            key={item.id}
+            item={item}
+            overdue={isOverdue(item, now)}
+            allTags={allTags}
+            onCreateTag={onCreateTag}
+            recurrenceLabel={rule ? describeRecurrence(rule) : null}
+            onToggle={onToggle}
+            onEdit={onEdit}
+            onDelete={onDelete}
+          />
+        );
+      })}
     </ul>
   );
 }
