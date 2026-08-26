@@ -52,11 +52,11 @@ export function SidebarNav() {
             key={item.label}
             className="flex items-center justify-between gap-2 rounded-lg px-3 py-2 text-sm text-foreground-muted"
           >
-            <span className="flex items-center gap-3">
-              <Icon className="h-4 w-4" aria-hidden="true" />
-              {item.label}
+            <span className="flex min-w-0 items-center gap-3">
+              <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
+              <span className="truncate">{item.label}</span>
             </span>
-            <span className="rounded-full border border-border px-1.5 py-0.5 text-[10px] font-medium">
+            <span className="shrink-0 whitespace-nowrap rounded-full border border-border px-1.5 py-0.5 text-[10px] font-medium">
               em breve
             </span>
           </div>
