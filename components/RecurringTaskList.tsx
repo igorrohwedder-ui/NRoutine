@@ -1,13 +1,12 @@
 import { Repeat } from "lucide-react";
-import type { Priority, Recurrence, RoutineItem } from "@/lib/types";
+import type { Priority, Recurrence, RoutineItem, Tag } from "@/lib/types";
 import { isOverdue } from "@/lib/taskStatus";
 import { describeRecurrence } from "@/lib/recurrence";
 import TaskItem, { type EditScope } from "./TaskItem";
 
 type Edits = {
   title: string;
-  category: string | null;
-  time: string | null;
+  tag_ids: string[];
   priority: Priority | null;
   due_date: string | null;
 };
@@ -16,12 +15,23 @@ type Props = {
   items: RoutineItem[];
   recurrences: Map<string, Recurrence>;
   now: Date;
+  allTags: Tag[];
+  onCreateTag: (name: string) => Promise<Tag | null>;
   onToggle: (id: string, done: boolean) => void;
   onEdit: (id: string, edits: Edits, scope: EditScope) => void;
   onDelete: (id: string, scope: EditScope) => void;
 };
 
-export default function RecurringTaskList({ items, recurrences, now, onToggle, onEdit, onDelete }: Props) {
+export default function RecurringTaskList({
+  items,
+  recurrences,
+  now,
+  allTags,
+  onCreateTag,
+  onToggle,
+  onEdit,
+  onDelete,
+}: Props) {
   if (items.length === 0) {
     return (
       <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-border bg-surface px-6 py-10 text-center">
@@ -50,6 +60,8 @@ export default function RecurringTaskList({ items, recurrences, now, onToggle, o
             key={item.id}
             item={item}
             overdue={isOverdue(item, now)}
+            allTags={allTags}
+            onCreateTag={onCreateTag}
             recurrenceLabel={rule ? describeRecurrence(rule) : null}
             onToggle={onToggle}
             onEdit={onEdit}

@@ -19,9 +19,15 @@ type Props = {
   referenceDate: Date;
 };
 
-const FREQUENCIES: RecurrenceFrequency[] = ["daily", "weekly", "monthly", "yearly", "custom"];
+const FREQUENCIES: RecurrenceFrequency[] = ["daily", "weekly", "monthly", "yearly", "month_period", "custom"];
 const UNITS: RecurrenceUnit[] = ["day", "week", "month", "year"];
-const UNIT_LABELS: Record<RecurrenceUnit, string> = { day: "dias", week: "semanas", month: "meses", year: "anos" };
+const UNIT_LABELS: Record<RecurrenceUnit, string> = {
+  day: "dias",
+  week: "semanas",
+  month: "meses",
+  year: "anos",
+  month_period: "período do mês",
+};
 
 const chip = (selected: boolean) =>
   `rounded-md px-2.5 py-1 text-xs font-medium transition ${
@@ -158,6 +164,36 @@ export default function RecurrencePicker({ value, onChange, referenceDate }: Pro
                     className={`w-16 ${inputBase}`}
                   />
                 </label>
+              )}
+
+              {value.unit === "month_period" && (
+                <div className="flex items-center gap-2 text-xs text-foreground-secondary">
+                  <span>Do dia</span>
+                  <input
+                    type="number"
+                    min={1}
+                    max={31}
+                    value={value.by_monthday ?? 1}
+                    onChange={(e) =>
+                      patch({ by_monthday: Math.min(31, Math.max(1, Number(e.target.value) || 1)) })
+                    }
+                    className={`w-14 ${inputBase}`}
+                    aria-label="Dia de início do período"
+                  />
+                  <span>ao dia</span>
+                  <input
+                    type="number"
+                    min={1}
+                    max={31}
+                    value={value.period_end_day ?? 31}
+                    onChange={(e) =>
+                      patch({ period_end_day: Math.min(31, Math.max(1, Number(e.target.value) || 1)) })
+                    }
+                    className={`w-14 ${inputBase}`}
+                    aria-label="Dia de fim do período"
+                  />
+                  <span>de cada mês</span>
+                </div>
               )}
 
               {value.unit === "year" && (

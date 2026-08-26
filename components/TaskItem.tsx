@@ -1,18 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import { Check, Trash2, Tag, Clock, AlertTriangle, CalendarDays, Repeat } from "lucide-react";
-import type { Priority, RoutineItem } from "@/lib/types";
-import { formatTime, formatDueDate, PRIORITY_LABELS } from "@/lib/taskStatus";
+import { Check, Trash2, AlertTriangle, CalendarDays, Repeat } from "lucide-react";
+import type { Priority, RoutineItem, Tag } from "@/lib/types";
+import { formatDueDate, PRIORITY_LABELS } from "@/lib/taskStatus";
 import { focusRing } from "./Sidebar";
 import PriorityToggle from "./PriorityToggle";
+import TagPicker from "./TagPicker";
 
 export type EditScope = "occurrence" | "series";
 
 type Edits = {
   title: string;
-  category: string | null;
-  time: string | null;
+  tag_ids: string[];
   priority: Priority | null;
   due_date: string | null;
 };
@@ -20,22 +20,14 @@ type Edits = {
 type Props = {
   item: RoutineItem;
   overdue: boolean;
+  allTags: Tag[];
+  onCreateTag: (name: string) => Promise<Tag | null>;
   /** Human-readable recurrence summary, when this occurrence belongs to a series. */
   recurrenceLabel?: string | null;
   onToggle: (id: string, done: boolean) => void;
   onEdit: (id: string, edits: Edits, scope: EditScope) => void;
   onDelete: (id: string, scope: EditScope) => void;
 };
-
-const CATEGORY_TONES: Record<string, string> = {
-  "manhã": "border-amber-500/20 bg-amber-500/10 text-amber-400",
-  tarde: "border-sky-500/20 bg-sky-500/10 text-sky-400",
-  noite: "border-indigo-500/20 bg-indigo-500/10 text-indigo-400",
-};
-
-function categoryTone(category: string) {
-  return CATEGORY_TONES[category.trim().toLowerCase()] ?? "border-border bg-surface-2 text-foreground-secondary";
-}
 
 const PRIORITY_TONES: Record<Priority, string> = {
   low: "border-border bg-surface-2 text-foreground-muted",
@@ -46,21 +38,29 @@ const PRIORITY_TONES: Record<Priority, string> = {
 const inputBase =
   "rounded-md border border-border bg-surface-2 text-foreground placeholder:text-foreground-muted outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/30";
 
-export default function TaskItem({ item, overdue, recurrenceLabel, onToggle, onEdit, onDelete }: Props) {
+export default function TaskItem({
+  item,
+  overdue,
+  allTags,
+  onCreateTag,
+  recurrenceLabel,
+  onToggle,
+  onEdit,
+  onDelete,
+}: Props) {
   const [editing, setEditing] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [titleDraft, setTitleDraft] = useState(item.title);
-  const [categoryDraft, setCategoryDraft] = useState(item.category ?? "");
-  const [timeDraft, setTimeDraft] = useState(formatTime(item.time) ?? "");
+  const [tagIdsDraft, setTagIdsDraft] = useState<string[]>(item.tag_ids);
   const [priorityDraft, setPriorityDraft] = useState<Priority | null>(item.priority);
   const [dueDateDraft, setDueDateDraft] = useState(item.due_date ?? "");
 
   const isRecurring = Boolean(item.recurrence_id);
+  const itemTags = allTags.filter((tag) => item.tag_ids.includes(tag.id));
 
   function startEdit() {
     setTitleDraft(item.title);
-    setCategoryDraft(item.category ?? "");
-    setTimeDraft(formatTime(item.time) ?? "");
+    setTagIdsDraft(item.tag_ids);
     setPriorityDraft(item.priority);
     setDueDateDraft(item.due_date ?? "");
     setEditing(true);
@@ -76,8 +76,7 @@ export default function TaskItem({ item, overdue, recurrenceLabel, onToggle, onE
       item.id,
       {
         title: trimmedTitle,
-        category: categoryDraft.trim() || null,
-        time: timeDraft || null,
+        tag_ids: tagIdsDraft,
         priority: priorityDraft,
         due_date: dueDateDraft || null,
       },
@@ -86,7 +85,6 @@ export default function TaskItem({ item, overdue, recurrenceLabel, onToggle, onE
     setEditing(false);
   }
 
-  const time = formatTime(item.time);
   const dueDate = formatDueDate(item.due_date);
 
   return (
@@ -122,21 +120,8 @@ export default function TaskItem({ item, overdue, recurrenceLabel, onToggle, onE
               aria-label="Editar título da tarefa"
               className={`px-2 py-1 text-sm ${inputBase}`}
             />
+            <TagPicker allTags={allTags} selectedIds={tagIdsDraft} onChange={setTagIdsDraft} onCreateTag={onCreateTag} />
             <div className="flex flex-wrap items-center gap-2">
-              <input
-                value={categoryDraft}
-                onChange={(e) => setCategoryDraft(e.target.value)}
-                placeholder="Categoria"
-                aria-label="Editar categoria"
-                className={`w-28 px-2 py-1 text-xs ${inputBase}`}
-              />
-              <input
-                type="time"
-                value={timeDraft}
-                onChange={(e) => setTimeDraft(e.target.value)}
-                aria-label="Editar horário"
-                className={`px-2 py-1 text-xs ${inputBase}`}
-              />
               <input
                 type="date"
                 value={dueDateDraft}
@@ -196,7 +181,7 @@ export default function TaskItem({ item, overdue, recurrenceLabel, onToggle, onE
             >
               {item.title}
             </span>
-            {(item.category || time || dueDate || item.priority || overdue || recurrenceLabel) && (
+            {(itemTags.length > 0 || dueDate || item.priority || overdue || recurrenceLabel) && (
               <span className="flex flex-wrap items-center gap-1.5">
                 {overdue && (
                   <span className="flex items-center gap-1 rounded-full border border-danger/30 bg-danger-soft px-2 py-0.5 text-[11px] font-medium text-danger">
@@ -217,20 +202,14 @@ export default function TaskItem({ item, overdue, recurrenceLabel, onToggle, onE
                     {PRIORITY_LABELS[item.priority]}
                   </span>
                 )}
-                {item.category && (
+                {itemTags.map((tag) => (
                   <span
-                    className={`flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium ${categoryTone(item.category)}`}
+                    key={tag.id}
+                    className="rounded-full border border-brand/20 bg-brand-soft px-2 py-0.5 text-[11px] font-medium text-brand"
                   >
-                    <Tag className="h-3 w-3" aria-hidden="true" />
-                    {item.category}
+                    {tag.name}
                   </span>
-                )}
-                {time && (
-                  <span className="flex items-center gap-1 text-[11px] text-foreground-muted">
-                    <Clock className="h-3 w-3" aria-hidden="true" />
-                    {time}
-                  </span>
-                )}
+                ))}
                 {dueDate && (
                   <span className="flex items-center gap-1 text-[11px] text-foreground-muted">
                     <CalendarDays className="h-3 w-3" aria-hidden="true" />

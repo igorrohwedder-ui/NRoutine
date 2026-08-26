@@ -1,10 +1,5 @@
 import type { Priority, RoutineItem } from "./types";
 
-/** "08:00:00" -> "08:00" */
-export function formatTime(time: string | null) {
-  return time ? time.slice(0, 5) : null;
-}
-
 export function formatDueDate(dueDate: string | null) {
   if (!dueDate) return null;
   return new Date(`${dueDate}T00:00:00`).toLocaleDateString("pt-BR", {
@@ -25,28 +20,11 @@ function startOfDay(date: Date) {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate());
 }
 
-/**
- * A task is overdue when it isn't done yet and either:
- * - it has a scheduled time-of-day that already passed today (this app
- *   models a *daily* routine, so "today" is the only reference we have), or
- * - it has a due date that is strictly before today.
- */
-export function isOverdue(item: Pick<RoutineItem, "done" | "time" | "due_date">, now: Date) {
-  if (item.done) return false;
-
-  if (item.time) {
-    const [hours, minutes] = item.time.split(":").map(Number);
-    const scheduledMinutes = hours * 60 + (minutes ?? 0);
-    const currentMinutes = now.getHours() * 60 + now.getMinutes();
-    if (currentMinutes > scheduledMinutes) return true;
-  }
-
-  if (item.due_date) {
-    const due = startOfDay(new Date(`${item.due_date}T00:00:00`));
-    if (due < startOfDay(now)) return true;
-  }
-
-  return false;
+/** A task is overdue when it isn't done yet and its due date is strictly before today. */
+export function isOverdue(item: Pick<RoutineItem, "done" | "due_date">, now: Date) {
+  if (item.done || !item.due_date) return false;
+  const due = startOfDay(new Date(`${item.due_date}T00:00:00`));
+  return due < startOfDay(now);
 }
 
 export type RoutineStats = {

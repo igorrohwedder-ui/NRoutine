@@ -6,6 +6,7 @@ export const FREQUENCY_LABELS: Record<RecurrenceFrequency, string> = {
   monthly: "Mensal",
   yearly: "Anual",
   custom: "Personalizada",
+  month_period: "Período do mês",
 };
 
 export const UNIT_BY_FREQUENCY: Record<Exclude<RecurrenceFrequency, "custom">, RecurrenceUnit> = {
@@ -13,6 +14,7 @@ export const UNIT_BY_FREQUENCY: Record<Exclude<RecurrenceFrequency, "custom">, R
   weekly: "week",
   monthly: "month",
   yearly: "year",
+  month_period: "month_period",
 };
 
 export const WEEKDAY_LABELS = ["dom", "seg", "ter", "qua", "qui", "sex", "sáb"];
@@ -38,6 +40,8 @@ export type RecurrenceDraft = {
   by_weekday: number[];
   by_monthday: number | null;
   by_month: number | null;
+  /** Only meaningful when unit === "month_period" (the period's last day). */
+  period_end_day: number | null;
   end_type: "never" | "on_date" | "after_count";
   ends_on: string | null;
   max_occurrences: number | null;
@@ -65,13 +69,13 @@ function daysInMonth(year: number, monthIndex0: number) {
   return new Date(year, monthIndex0 + 1, 0).getDate();
 }
 
-type RuleShape = Pick<Recurrence, "unit" | "interval" | "by_weekday" | "by_monthday" | "by_month">;
+type RuleShape = Pick<Recurrence, "unit" | "interval" | "by_weekday" | "by_monthday" | "by_month" | "period_end_day">;
 
 /**
  * Computes the next occurrence date after `fromDate` (the date of the
  * occurrence that was just completed). `fromDate` is always assumed to be a
  * valid point on the cadence, so schedules stay correct even if the user
- * completes a task late — see lib/recurrence.ts callers.
+ * completes a task late — see callers in app/page.tsx.
  */
 export function computeNextOccurrenceDate(rule: RuleShape, fromDate: Date): Date {
   const from = atMidnight(fromDate);
@@ -121,6 +125,21 @@ export function computeNextOccurrenceDate(rule: RuleShape, fromDate: Date): Date
     return candidate;
   }
 
+  if (rule.unit === "month_period") {
+    const endDay = Math.min(rule.period_end_day ?? 31, daysInMonth(from.getFullYear(), from.getMonth()));
+
+    if (from.getDate() < endDay) {
+      // Still inside the window this month: just move to the next day.
+      return new Date(from.getFullYear(), from.getMonth(), from.getDate() + 1);
+    }
+
+    // Last day of the window: jump to the start day of next month's cycle.
+    const nextMonthYear = from.getMonth() === 11 ? from.getFullYear() + 1 : from.getFullYear();
+    const nextMonthIndex = (from.getMonth() + 1) % 12;
+    const startDay = Math.min(rule.by_monthday ?? 1, daysInMonth(nextMonthYear, nextMonthIndex));
+    return new Date(nextMonthYear, nextMonthIndex, startDay);
+  }
+
   // yearly
   const month = (rule.by_month ?? from.getMonth() + 1) - 1;
   const day = rule.by_monthday ?? from.getDate();
@@ -131,6 +150,30 @@ export function computeNextOccurrenceDate(rule: RuleShape, fromDate: Date): Date
     candidate = new Date(year, month, Math.min(day, daysInMonth(year, month)));
   }
   return candidate;
+}
+
+/**
+ * For a brand-new "month period" recurrence, picks the correct first
+ * occurrence date relative to `referenceDate` (usually "today"):
+ * - if today is before the window, start on this month's start day;
+ * - if today is inside the window, start today;
+ * - if today is past the window, start on next month's start day.
+ */
+export function firstMonthPeriodOccurrence(
+  rule: Pick<Recurrence, "by_monthday" | "period_end_day">,
+  referenceDate: Date,
+): Date {
+  const ref = atMidnight(referenceDate);
+  const startDay = Math.min(rule.by_monthday ?? 1, daysInMonth(ref.getFullYear(), ref.getMonth()));
+  const endDay = Math.min(rule.period_end_day ?? 31, daysInMonth(ref.getFullYear(), ref.getMonth()));
+
+  if (ref.getDate() < startDay) return new Date(ref.getFullYear(), ref.getMonth(), startDay);
+  if (ref.getDate() > endDay) {
+    const nextMonthYear = ref.getMonth() === 11 ? ref.getFullYear() + 1 : ref.getFullYear();
+    const nextMonthIndex = (ref.getMonth() + 1) % 12;
+    return new Date(nextMonthYear, nextMonthIndex, Math.min(rule.by_monthday ?? 1, daysInMonth(nextMonthYear, nextMonthIndex)));
+  }
+  return ref;
 }
 
 export function seriesHasEnded(
@@ -149,7 +192,7 @@ export function seriesHasEnded(
   return false;
 }
 
-/** Human-readable summary, e.g. "Toda semana, seg, qua" or "A cada 2 meses, dia 5". */
+/** Human-readable summary, e.g. "Toda semana, seg, qua" or "Período do mês, dia 21 ao 31". */
 export function describeRecurrence(rule: RuleShape): string {
   const interval = Math.max(1, rule.interval);
 
@@ -171,6 +214,10 @@ export function describeRecurrence(rule: RuleShape): string {
     return interval === 1 ? `Todo mês, dia ${day}` : `A cada ${interval} meses, dia ${day}`;
   }
 
+  if (rule.unit === "month_period") {
+    return `Todo mês, dia ${rule.by_monthday ?? 1} ao ${rule.period_end_day ?? 31}`;
+  }
+
   const month = MONTH_LABELS[(rule.by_month ?? 1) - 1];
   const day = rule.by_monthday ?? 1;
   return interval === 1 ? `Todo ano, ${day} de ${month}` : `A cada ${interval} anos, ${day} de ${month}`;
@@ -185,6 +232,10 @@ export function defaultDraftForFrequency(frequency: RecurrenceFrequency, referen
     by_weekday: [referenceDate.getDay()],
     by_monthday: referenceDate.getDate(),
     by_month: referenceDate.getMonth() + 1,
+    period_end_day:
+      frequency === "month_period"
+        ? daysInMonth(referenceDate.getFullYear(), referenceDate.getMonth())
+        : null,
     end_type: "never",
     ends_on: null,
     max_occurrences: null,

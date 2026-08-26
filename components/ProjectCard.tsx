@@ -2,17 +2,16 @@
 
 import { useState } from "react";
 import { ChevronDown, ChevronRight, Trash2, Plus, CalendarDays } from "lucide-react";
-import type { Priority, Project, ProjectStatus, RoutineItem } from "@/lib/types";
+import type { Priority, Project, ProjectStatus, RoutineItem, Tag } from "@/lib/types";
 import { computeProjectProgress, projectDeadlineStatus, PROJECT_STATUS_LABELS } from "@/lib/projects";
-import { PRIORITY_LABELS } from "@/lib/taskStatus";
+import { PRIORITY_LABELS, isOverdue } from "@/lib/taskStatus";
 import { focusRing } from "./Sidebar";
 import PriorityToggle from "./PriorityToggle";
 import TaskItem, { type EditScope } from "./TaskItem";
 
 type Edits = {
   title: string;
-  category: string | null;
-  time: string | null;
+  tag_ids: string[];
   priority: Priority | null;
   due_date: string | null;
 };
@@ -25,6 +24,8 @@ type Props = {
   project: Project;
   tasks: RoutineItem[];
   now: Date;
+  allTags: Tag[];
+  onCreateTag: (name: string) => Promise<Tag | null>;
   expanded: boolean;
   onToggleExpand: () => void;
   onUpdate: (id: string, edits: ProjectEdits) => void;
@@ -58,6 +59,8 @@ export default function ProjectCard({
   project,
   tasks,
   now,
+  allTags,
+  onCreateTag,
   expanded,
   onToggleExpand,
   onUpdate,
@@ -301,7 +304,9 @@ export default function ProjectCard({
                   <TaskItem
                     key={task.id}
                     item={task}
-                    overdue={false}
+                    overdue={isOverdue(task, now)}
+                    allTags={allTags}
+                    onCreateTag={onCreateTag}
                     onToggle={onToggleTask}
                     onEdit={onEditTask}
                     onDelete={onDeleteTask}

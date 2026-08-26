@@ -1,18 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Tag, Clock, ChevronDown, CalendarDays } from "lucide-react";
-import type { Priority, ProjectStatus } from "@/lib/types";
+import { Plus, ChevronDown, CalendarDays } from "lucide-react";
+import type { Priority, ProjectStatus, Tag } from "@/lib/types";
 import { type RecurrenceDraft } from "@/lib/recurrence";
 import { PROJECT_STATUS_LABELS } from "@/lib/projects";
 import { focusRing } from "./Sidebar";
 import PriorityToggle from "./PriorityToggle";
 import RecurrencePicker from "./RecurrencePicker";
+import TagPicker from "./TagPicker";
 
 export type NewTask = {
   title: string;
-  category: string | null;
-  time: string | null;
+  tagIds: string[];
   priority: Priority | null;
   due_date: string | null;
   recurrence: RecurrenceDraft | null;
@@ -28,6 +28,8 @@ export type NewProject = {
 };
 
 type Props = {
+  allTags: Tag[];
+  onCreateTag: (name: string) => Promise<Tag | null>;
   onAddTask: (task: NewTask) => Promise<void>;
   onAddProject: (project: NewProject) => Promise<void>;
 };
@@ -37,13 +39,12 @@ const inputBase =
 
 const PROJECT_STATUSES: ProjectStatus[] = ["not_started", "in_progress", "on_hold", "completed", "cancelled"];
 
-export default function TaskForm({ onAddTask, onAddProject }: Props) {
+export default function TaskForm({ allTags, onCreateTag, onAddTask, onAddProject }: Props) {
   const [mode, setMode] = useState<"task" | "project">("task");
 
   // Task fields
   const [title, setTitle] = useState("");
-  const [category, setCategory] = useState("");
-  const [time, setTime] = useState("");
+  const [tagIds, setTagIds] = useState<string[]>([]);
   const [priority, setPriority] = useState<Priority | null>(null);
   const [dueDate, setDueDate] = useState("");
   const [recurrence, setRecurrence] = useState<RecurrenceDraft | null>(null);
@@ -61,8 +62,7 @@ export default function TaskForm({ onAddTask, onAddProject }: Props) {
 
   function resetTask() {
     setTitle("");
-    setCategory("");
-    setTime("");
+    setTagIds([]);
     setPriority(null);
     setDueDate("");
     setRecurrence(null);
@@ -89,8 +89,7 @@ export default function TaskForm({ onAddTask, onAddProject }: Props) {
       try {
         await onAddTask({
           title: trimmed,
-          category: category.trim() || null,
-          time: time || null,
+          tagIds,
           priority,
           due_date: dueDate || null,
           recurrence,
@@ -169,56 +168,37 @@ export default function TaskForm({ onAddTask, onAddProject }: Props) {
           </div>
 
           {showDetails ? (
-            <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-border pt-3">
-              <div className="relative">
-                <Tag className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-foreground-muted" aria-hidden="true" />
-                <input
-                  type="text"
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value)}
-                  placeholder="Categoria (ex: Manhã, Trabalho)"
-                  aria-label="Categoria da tarefa"
-                  className={`w-48 py-1.5 pl-8 pr-3 text-xs focus:ring-2 focus:ring-brand/30 ${inputBase}`}
+            <div className="mt-3 flex flex-col gap-3 border-t border-border pt-3">
+              <TagPicker allTags={allTags} selectedIds={tagIds} onChange={setTagIds} onCreateTag={onCreateTag} />
+
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="relative">
+                  <CalendarDays className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-foreground-muted" aria-hidden="true" />
+                  <input
+                    type="date"
+                    value={dueDate}
+                    onChange={(e) => setDueDate(e.target.value)}
+                    aria-label="Data de vencimento"
+                    className={`py-1.5 pl-8 pr-3 text-xs focus:ring-2 focus:ring-brand/30 ${inputBase}`}
+                  />
+                </div>
+
+                <PriorityToggle value={priority} onChange={setPriority} />
+
+                <RecurrencePicker
+                  value={recurrence}
+                  onChange={setRecurrence}
+                  referenceDate={dueDate ? new Date(`${dueDate}T00:00:00`) : new Date()}
                 />
+
+                <button
+                  type="button"
+                  onClick={() => setShowDetails(false)}
+                  className={`rounded-md px-2 py-1 text-xs font-medium text-foreground-muted hover:text-foreground-secondary ${focusRing}`}
+                >
+                  ocultar
+                </button>
               </div>
-
-              <div className="relative">
-                <Clock className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-foreground-muted" aria-hidden="true" />
-                <input
-                  type="time"
-                  value={time}
-                  onChange={(e) => setTime(e.target.value)}
-                  aria-label="Horário da tarefa"
-                  className={`py-1.5 pl-8 pr-3 text-xs focus:ring-2 focus:ring-brand/30 ${inputBase}`}
-                />
-              </div>
-
-              <div className="relative">
-                <CalendarDays className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-foreground-muted" aria-hidden="true" />
-                <input
-                  type="date"
-                  value={dueDate}
-                  onChange={(e) => setDueDate(e.target.value)}
-                  aria-label="Data de vencimento"
-                  className={`py-1.5 pl-8 pr-3 text-xs focus:ring-2 focus:ring-brand/30 ${inputBase}`}
-                />
-              </div>
-
-              <PriorityToggle value={priority} onChange={setPriority} />
-
-              <RecurrencePicker
-                value={recurrence}
-                onChange={setRecurrence}
-                referenceDate={dueDate ? new Date(`${dueDate}T00:00:00`) : new Date()}
-              />
-
-              <button
-                type="button"
-                onClick={() => setShowDetails(false)}
-                className={`rounded-md px-2 py-1 text-xs font-medium text-foreground-muted hover:text-foreground-secondary ${focusRing}`}
-              >
-                ocultar
-              </button>
             </div>
           ) : (
             <button
@@ -227,7 +207,7 @@ export default function TaskForm({ onAddTask, onAddProject }: Props) {
               className={`mt-2 flex items-center gap-1 rounded-md px-1 py-0.5 text-xs font-medium text-foreground-secondary hover:text-foreground ${focusRing}`}
             >
               <ChevronDown className="h-3.5 w-3.5" aria-hidden="true" />
-              Categoria, horário, prioridade, vencimento, repetição
+              Tags, prioridade, vencimento, repetição
             </button>
           )}
         </>
