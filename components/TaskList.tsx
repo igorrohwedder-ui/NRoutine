@@ -1,5 +1,5 @@
 import { Sparkles } from "lucide-react";
-import type { RoutineItem } from "@/lib/types";
+import type { Priority, RoutineItem } from "@/lib/types";
 import { isOverdue } from "@/lib/taskStatus";
 import TaskItem from "./TaskItem";
 
@@ -7,6 +7,8 @@ type Edits = {
   title: string;
   category: string | null;
   time: string | null;
+  priority: Priority | null;
+  due_date: string | null;
 };
 
 type Props = {

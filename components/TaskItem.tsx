@@ -1,15 +1,17 @@
 "use client";
 
 import { useState } from "react";
-import { Check, Trash2, Tag, Clock, AlertTriangle } from "lucide-react";
-import type { RoutineItem } from "@/lib/types";
-import { formatTime } from "@/lib/taskStatus";
+import { Check, Trash2, Tag, Clock, AlertTriangle, CalendarDays, ArrowDown, Minus, ArrowUp, type LucideIcon } from "lucide-react";
+import type { Priority, RoutineItem } from "@/lib/types";
+import { formatTime, formatDueDate, PRIORITY_LABELS } from "@/lib/taskStatus";
 import { focusRing } from "./Sidebar";
 
 type Edits = {
   title: string;
   category: string | null;
   time: string | null;
+  priority: Priority | null;
+  due_date: string | null;
 };
 
 type Props = {
@@ -30,6 +32,16 @@ function categoryTone(category: string) {
   return CATEGORY_TONES[category.trim().toLowerCase()] ?? "border-border bg-surface-2 text-foreground-secondary";
 }
 
+const PRIORITY_ICONS: Record<Priority, LucideIcon> = { low: ArrowDown, medium: Minus, high: ArrowUp };
+
+const PRIORITY_TONES: Record<Priority, string> = {
+  low: "border-border bg-surface-2 text-foreground-muted",
+  medium: "border-border bg-surface-2 text-foreground-secondary",
+  high: "border-danger/30 bg-danger-soft text-danger",
+};
+
+const PRIORITIES: Priority[] = ["low", "medium", "high"];
+
 const inputBase =
   "rounded-md border border-border bg-surface-2 text-foreground placeholder:text-foreground-muted outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/30";
 
@@ -38,11 +50,15 @@ export default function TaskItem({ item, overdue, onToggle, onEdit, onDelete }: 
   const [titleDraft, setTitleDraft] = useState(item.title);
   const [categoryDraft, setCategoryDraft] = useState(item.category ?? "");
   const [timeDraft, setTimeDraft] = useState(formatTime(item.time) ?? "");
+  const [priorityDraft, setPriorityDraft] = useState<Priority | null>(item.priority);
+  const [dueDateDraft, setDueDateDraft] = useState(item.due_date ?? "");
 
   function startEdit() {
     setTitleDraft(item.title);
     setCategoryDraft(item.category ?? "");
     setTimeDraft(formatTime(item.time) ?? "");
+    setPriorityDraft(item.priority);
+    setDueDateDraft(item.due_date ?? "");
     setEditing(true);
   }
 
@@ -56,11 +72,14 @@ export default function TaskItem({ item, overdue, onToggle, onEdit, onDelete }: 
       title: trimmedTitle,
       category: categoryDraft.trim() || null,
       time: timeDraft || null,
+      priority: priorityDraft,
+      due_date: dueDateDraft || null,
     });
     setEditing(false);
   }
 
   const time = formatTime(item.time);
+  const dueDate = formatDueDate(item.due_date);
 
   return (
     <li
@@ -101,7 +120,7 @@ export default function TaskItem({ item, overdue, onToggle, onEdit, onDelete }: 
                 onChange={(e) => setCategoryDraft(e.target.value)}
                 placeholder="Categoria"
                 aria-label="Editar categoria"
-                className={`w-32 px-2 py-1 text-xs ${inputBase}`}
+                className={`w-28 px-2 py-1 text-xs ${inputBase}`}
               />
               <input
                 type="time"
@@ -110,6 +129,38 @@ export default function TaskItem({ item, overdue, onToggle, onEdit, onDelete }: 
                 aria-label="Editar horário"
                 className={`px-2 py-1 text-xs ${inputBase}`}
               />
+              <input
+                type="date"
+                value={dueDateDraft}
+                onChange={(e) => setDueDateDraft(e.target.value)}
+                aria-label="Editar data de vencimento"
+                className={`px-2 py-1 text-xs ${inputBase}`}
+              />
+              <div
+                role="group"
+                aria-label="Editar prioridade"
+                className="flex overflow-hidden rounded-md border border-border"
+              >
+                {PRIORITIES.map((value) => {
+                  const Icon = PRIORITY_ICONS[value];
+                  const selected = priorityDraft === value;
+                  return (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => setPriorityDraft(selected ? null : value)}
+                      aria-pressed={selected}
+                      className={`flex items-center gap-1 px-2 py-1 text-xs font-medium transition ${
+                        selected ? "bg-brand text-white" : "bg-surface-2 text-foreground-secondary hover:bg-surface"
+                      } ${focusRing}`}
+                    >
+                      <Icon className="h-3 w-3" aria-hidden="true" />
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
               <button
                 type="button"
                 onClick={commitEdit}
@@ -140,12 +191,23 @@ export default function TaskItem({ item, overdue, onToggle, onEdit, onDelete }: 
             >
               {item.title}
             </span>
-            {(item.category || time || overdue) && (
+            {(item.category || time || dueDate || item.priority || overdue) && (
               <span className="flex flex-wrap items-center gap-1.5">
                 {overdue && (
                   <span className="flex items-center gap-1 rounded-full border border-danger/30 bg-danger-soft px-2 py-0.5 text-[11px] font-medium text-danger">
                     <AlertTriangle className="h-3 w-3" aria-hidden="true" />
                     Atrasada
+                  </span>
+                )}
+                {item.priority && (
+                  <span
+                    className={`flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium ${PRIORITY_TONES[item.priority]}`}
+                  >
+                    {(() => {
+                      const Icon = PRIORITY_ICONS[item.priority];
+                      return <Icon className="h-3 w-3" aria-hidden="true" />;
+                    })()}
+                    {PRIORITY_LABELS[item.priority]}
                   </span>
                 )}
                 {item.category && (
@@ -160,6 +222,12 @@ export default function TaskItem({ item, overdue, onToggle, onEdit, onDelete }: 
                   <span className="flex items-center gap-1 text-[11px] text-foreground-muted">
                     <Clock className="h-3 w-3" aria-hidden="true" />
                     {time}
+                  </span>
+                )}
+                {dueDate && (
+                  <span className="flex items-center gap-1 text-[11px] text-foreground-muted">
+                    <CalendarDays className="h-3 w-3" aria-hidden="true" />
+                    {dueDate}
                   </span>
                 )}
               </span>

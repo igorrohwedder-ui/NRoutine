@@ -7,7 +7,9 @@ create table if not exists routine_items (
   time time,
   category text,
   done boolean not null default false,
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  priority text check (priority in ('low', 'medium', 'high')),
+  due_date date
 );
 
 alter table routine_items enable row level security;

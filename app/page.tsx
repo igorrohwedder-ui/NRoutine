@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
-import type { RoutineItem } from "@/lib/types";
+import type { Priority, RoutineItem } from "@/lib/types";
 import { computeStats } from "@/lib/taskStatus";
 import AppShell from "@/components/AppShell";
 import PageHeader from "@/components/PageHeader";
@@ -61,7 +61,13 @@ export default function Home() {
     };
   }, []);
 
-  async function handleAdd(task: { title: string; category: string | null; time: string | null }) {
+  async function handleAdd(task: {
+    title: string;
+    category: string | null;
+    time: string | null;
+    priority: Priority | null;
+    due_date: string | null;
+  }) {
     const { data, error } = await supabase.from("routine_items").insert(task).select().single();
 
     if (error) {
@@ -82,7 +88,13 @@ export default function Home() {
 
   async function handleEdit(
     id: string,
-    edits: { title: string; category: string | null; time: string | null },
+    edits: {
+      title: string;
+      category: string | null;
+      time: string | null;
+      priority: Priority | null;
+      due_date: string | null;
+    },
   ) {
     setItems((prev) => prev.map((item) => (item.id === id ? { ...item, ...edits } : item)));
     const { error } = await supabase.from("routine_items").update(edits).eq("id", id);
