@@ -438,17 +438,24 @@ export default function Home() {
   // ---------- Derived view state ----------
 
   const todayStr = toDateString(now);
-  // "Today's Tasks" only ever shows items due today or earlier (or undated) —
-  // a one-off task scheduled for a future date stays hidden until its date
-  // arrives. A recurring task due today belongs here too (it's actionable
-  // today, same as any one-off task) — intentional overlap with the
-  // recurring section below, not a bug.
-  const todayItems = items.filter((i) => !i.project_id && (!i.due_date || i.due_date <= todayStr));
-  // "Recurring Tasks" is a series overview, not date-gated: once you
-  // complete today's occurrence, the freshly generated next one (e.g.
-  // tomorrow) shows up here immediately, confirming the series continues —
-  // even though it won't join "Tarefas de hoje" until its own due date.
-  const recurringItems = items.filter((i) => !i.project_id && i.recurrence_id);
+  // "Today's Tasks": due exactly today, undated, or overdue-and-still-pending.
+  // A completed occurrence from a past day (e.g. yesterday's daily task)
+  // drops off once the day changes — it's done, it's history, it shouldn't
+  // linger in "today". A recurring task due today belongs here too (it's
+  // actionable today, same as any one-off task) — intentional overlap with
+  // the recurring section below.
+  const todayItems = items.filter((i) => {
+    if (i.project_id) return false;
+    if (!i.due_date) return true;
+    if (i.due_date === todayStr) return true;
+    return i.due_date < todayStr && !i.done;
+  });
+  // "Recurring Tasks" shows only the open occurrence of each series (there's
+  // only ever one, by design — see generateNextOccurrence). Once you
+  // complete it, it disappears from here and the freshly generated next one
+  // takes its place — even though that next one won't join "Tarefas de hoje"
+  // until its own due date arrives.
+  const recurringItems = items.filter((i) => !i.project_id && i.recurrence_id && !i.done);
 
   const tasksByProject = new Map<string, RoutineItem[]>();
   for (const item of items) {
