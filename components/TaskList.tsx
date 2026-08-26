@@ -1,7 +1,7 @@
 import { Sparkles } from "lucide-react";
 import type { Priority, RoutineItem } from "@/lib/types";
 import { isOverdue } from "@/lib/taskStatus";
-import TaskItem from "./TaskItem";
+import TaskItem, { type EditScope } from "./TaskItem";
 
 type Edits = {
   title: string;
@@ -14,9 +14,10 @@ type Edits = {
 type Props = {
   items: RoutineItem[];
   now: Date;
+  emptyMessage?: string;
   onToggle: (id: string, done: boolean) => void;
-  onEdit: (id: string, edits: Edits) => void;
-  onDelete: (id: string) => void;
+  onEdit: (id: string, edits: Edits, scope: EditScope) => void;
+  onDelete: (id: string, scope: EditScope) => void;
 };
 
 const UNCATEGORIZED = "Sem categoria";
@@ -34,12 +35,14 @@ function taskCountLabel(count: number) {
   return count === 1 ? "1 tarefa" : `${count} tarefas`;
 }
 
-export default function TaskList({ items, now, onToggle, onEdit, onDelete }: Props) {
+export default function TaskList({ items, now, emptyMessage, onToggle, onEdit, onDelete }: Props) {
   if (items.length === 0) {
     return (
       <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-border bg-surface px-6 py-14 text-center">
         <Sparkles className="h-6 w-6 text-foreground-muted" aria-hidden="true" />
-        <p className="text-sm font-medium text-foreground">Nenhuma tarefa por aqui ainda</p>
+        <p className="text-sm font-medium text-foreground">
+          {emptyMessage ?? "Nenhuma tarefa por aqui ainda"}
+        </p>
         <p className="text-xs text-foreground-muted">Adicione a primeira tarefa do seu dia acima.</p>
       </div>
     );

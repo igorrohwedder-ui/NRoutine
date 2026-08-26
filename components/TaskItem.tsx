@@ -1,10 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { Check, Trash2, Tag, Clock, AlertTriangle, CalendarDays, ArrowDown, Minus, ArrowUp, type LucideIcon } from "lucide-react";
+import { Check, Trash2, Tag, Clock, AlertTriangle, CalendarDays, Repeat } from "lucide-react";
 import type { Priority, RoutineItem } from "@/lib/types";
 import { formatTime, formatDueDate, PRIORITY_LABELS } from "@/lib/taskStatus";
 import { focusRing } from "./Sidebar";
+import PriorityToggle from "./PriorityToggle";
+
+export type EditScope = "occurrence" | "series";
 
 type Edits = {
   title: string;
@@ -17,9 +20,11 @@ type Edits = {
 type Props = {
   item: RoutineItem;
   overdue: boolean;
+  /** Human-readable recurrence summary, when this occurrence belongs to a series. */
+  recurrenceLabel?: string | null;
   onToggle: (id: string, done: boolean) => void;
-  onEdit: (id: string, edits: Edits) => void;
-  onDelete: (id: string) => void;
+  onEdit: (id: string, edits: Edits, scope: EditScope) => void;
+  onDelete: (id: string, scope: EditScope) => void;
 };
 
 const CATEGORY_TONES: Record<string, string> = {
@@ -32,26 +37,25 @@ function categoryTone(category: string) {
   return CATEGORY_TONES[category.trim().toLowerCase()] ?? "border-border bg-surface-2 text-foreground-secondary";
 }
 
-const PRIORITY_ICONS: Record<Priority, LucideIcon> = { low: ArrowDown, medium: Minus, high: ArrowUp };
-
 const PRIORITY_TONES: Record<Priority, string> = {
   low: "border-border bg-surface-2 text-foreground-muted",
   medium: "border-border bg-surface-2 text-foreground-secondary",
   high: "border-danger/30 bg-danger-soft text-danger",
 };
 
-const PRIORITIES: Priority[] = ["low", "medium", "high"];
-
 const inputBase =
   "rounded-md border border-border bg-surface-2 text-foreground placeholder:text-foreground-muted outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/30";
 
-export default function TaskItem({ item, overdue, onToggle, onEdit, onDelete }: Props) {
+export default function TaskItem({ item, overdue, recurrenceLabel, onToggle, onEdit, onDelete }: Props) {
   const [editing, setEditing] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [titleDraft, setTitleDraft] = useState(item.title);
   const [categoryDraft, setCategoryDraft] = useState(item.category ?? "");
   const [timeDraft, setTimeDraft] = useState(formatTime(item.time) ?? "");
   const [priorityDraft, setPriorityDraft] = useState<Priority | null>(item.priority);
   const [dueDateDraft, setDueDateDraft] = useState(item.due_date ?? "");
+
+  const isRecurring = Boolean(item.recurrence_id);
 
   function startEdit() {
     setTitleDraft(item.title);
@@ -62,19 +66,23 @@ export default function TaskItem({ item, overdue, onToggle, onEdit, onDelete }: 
     setEditing(true);
   }
 
-  function commitEdit() {
+  function commitEdit(scope: EditScope) {
     const trimmedTitle = titleDraft.trim();
     if (!trimmedTitle) {
       setEditing(false);
       return;
     }
-    onEdit(item.id, {
-      title: trimmedTitle,
-      category: categoryDraft.trim() || null,
-      time: timeDraft || null,
-      priority: priorityDraft,
-      due_date: dueDateDraft || null,
-    });
+    onEdit(
+      item.id,
+      {
+        title: trimmedTitle,
+        category: categoryDraft.trim() || null,
+        time: timeDraft || null,
+        priority: priorityDraft,
+        due_date: dueDateDraft || null,
+      },
+      scope,
+    );
     setEditing(false);
   }
 
@@ -83,7 +91,7 @@ export default function TaskItem({ item, overdue, onToggle, onEdit, onDelete }: 
 
   return (
     <li
-      className={`group flex items-start gap-3 rounded-xl border bg-surface px-4 py-3 transition ${
+      className={`group relative flex items-start gap-3 rounded-xl border bg-surface px-4 py-3 transition ${
         overdue ? "border-danger/30" : "border-border hover:border-border-strong"
       }`}
     >
@@ -108,7 +116,7 @@ export default function TaskItem({ item, overdue, onToggle, onEdit, onDelete }: 
               value={titleDraft}
               onChange={(e) => setTitleDraft(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === "Enter") commitEdit();
+                if (e.key === "Enter" && !isRecurring) commitEdit("occurrence");
                 if (e.key === "Escape") setEditing(false);
               }}
               aria-label="Editar título da tarefa"
@@ -136,38 +144,35 @@ export default function TaskItem({ item, overdue, onToggle, onEdit, onDelete }: 
                 aria-label="Editar data de vencimento"
                 className={`px-2 py-1 text-xs ${inputBase}`}
               />
-              <div
-                role="group"
-                aria-label="Editar prioridade"
-                className="flex overflow-hidden rounded-md border border-border"
-              >
-                {PRIORITIES.map((value) => {
-                  const Icon = PRIORITY_ICONS[value];
-                  const selected = priorityDraft === value;
-                  return (
-                    <button
-                      key={value}
-                      type="button"
-                      onClick={() => setPriorityDraft(selected ? null : value)}
-                      aria-pressed={selected}
-                      className={`flex items-center gap-1 px-2 py-1 text-xs font-medium transition ${
-                        selected ? "bg-brand text-white" : "bg-surface-2 text-foreground-secondary hover:bg-surface"
-                      } ${focusRing}`}
-                    >
-                      <Icon className="h-3 w-3" aria-hidden="true" />
-                    </button>
-                  );
-                })}
-              </div>
+              <PriorityToggle value={priorityDraft} onChange={setPriorityDraft} compact />
             </div>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={commitEdit}
-                className={`rounded-md bg-brand px-3 py-1 text-xs font-medium text-white hover:bg-brand/90 ${focusRing}`}
-              >
-                Salvar
-              </button>
+            <div className="flex flex-wrap items-center gap-2">
+              {isRecurring ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => commitEdit("occurrence")}
+                    className={`rounded-md bg-brand px-3 py-1 text-xs font-medium text-white hover:bg-brand/90 ${focusRing}`}
+                  >
+                    Salvar apenas esta
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => commitEdit("series")}
+                    className={`rounded-md border border-border px-3 py-1 text-xs font-medium text-foreground-secondary hover:bg-surface-2 ${focusRing}`}
+                  >
+                    Salvar toda a série
+                  </button>
+                </>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => commitEdit("occurrence")}
+                  className={`rounded-md bg-brand px-3 py-1 text-xs font-medium text-white hover:bg-brand/90 ${focusRing}`}
+                >
+                  Salvar
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => setEditing(false)}
@@ -191,7 +196,7 @@ export default function TaskItem({ item, overdue, onToggle, onEdit, onDelete }: 
             >
               {item.title}
             </span>
-            {(item.category || time || dueDate || item.priority || overdue) && (
+            {(item.category || time || dueDate || item.priority || overdue || recurrenceLabel) && (
               <span className="flex flex-wrap items-center gap-1.5">
                 {overdue && (
                   <span className="flex items-center gap-1 rounded-full border border-danger/30 bg-danger-soft px-2 py-0.5 text-[11px] font-medium text-danger">
@@ -199,14 +204,16 @@ export default function TaskItem({ item, overdue, onToggle, onEdit, onDelete }: 
                     Atrasada
                   </span>
                 )}
+                {recurrenceLabel && (
+                  <span className="flex items-center gap-1 rounded-full border border-border bg-surface-2 px-2 py-0.5 text-[11px] font-medium text-foreground-secondary">
+                    <Repeat className="h-3 w-3" aria-hidden="true" />
+                    {recurrenceLabel}
+                  </span>
+                )}
                 {item.priority && (
                   <span
-                    className={`flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium ${PRIORITY_TONES[item.priority]}`}
+                    className={`rounded-full border px-2 py-0.5 text-[11px] font-medium ${PRIORITY_TONES[item.priority]}`}
                   >
-                    {(() => {
-                      const Icon = PRIORITY_ICONS[item.priority];
-                      return <Icon className="h-3 w-3" aria-hidden="true" />;
-                    })()}
                     {PRIORITY_LABELS[item.priority]}
                   </span>
                 )}
@@ -238,12 +245,47 @@ export default function TaskItem({ item, overdue, onToggle, onEdit, onDelete }: 
 
       <button
         type="button"
-        onClick={() => onDelete(item.id)}
+        onClick={() => (isRecurring ? setConfirmingDelete((c) => !c) : onDelete(item.id, "occurrence"))}
         aria-label={`Excluir tarefa: ${item.title}`}
-        className={`shrink-0 rounded-md p-1.5 text-foreground-muted opacity-0 transition hover:bg-danger-soft hover:text-danger group-hover:opacity-100 group-focus-within:opacity-100 ${focusRing}`}
+        aria-expanded={isRecurring ? confirmingDelete : undefined}
+        className={`shrink-0 rounded-md p-1.5 text-foreground-muted opacity-0 transition hover:bg-danger-soft hover:text-danger group-hover:opacity-100 group-focus-within:opacity-100 ${focusRing} ${
+          confirmingDelete ? "!opacity-100 bg-danger-soft text-danger" : ""
+        }`}
       >
         <Trash2 className="h-4 w-4" aria-hidden="true" />
       </button>
+
+      {confirmingDelete && (
+        <div className="absolute right-2 top-11 z-10 flex w-52 flex-col gap-1 rounded-lg border border-border bg-surface p-2 shadow-lg">
+          <button
+            type="button"
+            onClick={() => {
+              setConfirmingDelete(false);
+              onDelete(item.id, "occurrence");
+            }}
+            className="rounded-md px-2 py-1.5 text-left text-xs text-foreground hover:bg-surface-2"
+          >
+            Excluir esta ocorrência
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setConfirmingDelete(false);
+              onDelete(item.id, "series");
+            }}
+            className="rounded-md px-2 py-1.5 text-left text-xs text-danger hover:bg-danger-soft"
+          >
+            Encerrar série
+          </button>
+          <button
+            type="button"
+            onClick={() => setConfirmingDelete(false)}
+            className="rounded-md px-2 py-1.5 text-left text-xs text-foreground-muted hover:bg-surface-2"
+          >
+            Cancelar
+          </button>
+        </div>
+      )}
     </li>
   );
 }
