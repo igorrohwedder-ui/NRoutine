@@ -439,14 +439,16 @@ export default function Home() {
 
   const todayStr = toDateString(now);
   // "Today's Tasks" only ever shows items due today or earlier (or undated) —
-  // a one-off task scheduled for a future date, or a recurring occurrence not
-  // yet due, stays hidden until its date arrives.
-  const dueTodayOrEarlier = items.filter((i) => !i.project_id && (!i.due_date || i.due_date <= todayStr));
-  // A recurring task due today belongs in both "Tarefas de hoje" (it's
-  // actionable today, same as any one-off task) and "Tarefas recorrentes"
-  // (it's part of a series) — intentional overlap, not a bug.
-  const todayItems = dueTodayOrEarlier;
-  const recurringItems = dueTodayOrEarlier.filter((i) => i.recurrence_id);
+  // a one-off task scheduled for a future date stays hidden until its date
+  // arrives. A recurring task due today belongs here too (it's actionable
+  // today, same as any one-off task) — intentional overlap with the
+  // recurring section below, not a bug.
+  const todayItems = items.filter((i) => !i.project_id && (!i.due_date || i.due_date <= todayStr));
+  // "Recurring Tasks" is a series overview, not date-gated: once you
+  // complete today's occurrence, the freshly generated next one (e.g.
+  // tomorrow) shows up here immediately, confirming the series continues —
+  // even though it won't join "Tarefas de hoje" until its own due date.
+  const recurringItems = items.filter((i) => !i.project_id && i.recurrence_id);
 
   const tasksByProject = new Map<string, RoutineItem[]>();
   for (const item of items) {
@@ -455,8 +457,10 @@ export default function Home() {
     tasksByProject.get(item.project_id)!.push(item);
   }
 
-  const dailyItemsForStats = items.filter((i) => !i.project_id);
-  const stats = computeStats(dailyItemsForStats, now);
+  // Stats mirror exactly what's shown in "Tarefas de hoje" — a future-dated
+  // recurring occurrence (e.g. tomorrow's, generated right after completing
+  // today's) must not count as "pending" today.
+  const stats = computeStats(todayItems, now);
   const visibility = sectionVisibility(filter);
   const visibleToday = filterByTag(filterRoutineItems(todayItems, filter, now), activeTagId);
   const visibleRecurring = filterByTag(filterRoutineItems(recurringItems, filter, now), activeTagId);
