@@ -1,32 +1,57 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f8fafc;
-  --foreground: #0f172a;
+  /* Superfícies */
+  --background: #0b0e14;
+  --surface: #12151c;
+  --surface-2: #171b24;
+
+  /* Bordas */
+  --border: #232833;
+  --border-strong: #323a48;
+
+  /* Texto */
+  --foreground: #e7e9ec;
+  --foreground-secondary: #9aa4b2;
+  --foreground-muted: #626b79;
+
+  /* Marca (identidade NewByte) e estados semânticos */
+  --brand: #2f7bf6;
+  --brand-soft: #1a2b4d;
+  --success: #34d399;
+  --success-soft: #113228;
+  --danger: #f87171;
+  --danger-soft: #3a1a1a;
 }
 
 @theme inline {
   --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
 
-  /* Paleta inspirada na identidade visual da NewByte */
-  --color-brand: #015eea;
-  --color-brand-light: #00c0fa;
-  --color-navy: #0f172a;
-  --color-navy-deep: #03142c;
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+
+  --color-foreground: var(--foreground);
+  --color-foreground-secondary: var(--foreground-secondary);
+  --color-foreground-muted: var(--foreground-muted);
+
+  --color-brand: var(--brand);
+  --color-brand-soft: var(--brand-soft);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
 
   --font-sans: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #03142c;
-    --foreground: #f1f5f9;
-  }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans);
+}
+
+* {
+  border-color: var(--border);
 }

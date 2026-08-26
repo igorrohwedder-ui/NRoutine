@@ -3,7 +3,10 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import type { RoutineItem } from "@/lib/types";
-import Header from "@/components/Header";
+import { computeStats } from "@/lib/taskStatus";
+import AppShell from "@/components/AppShell";
+import PageHeader from "@/components/PageHeader";
+import StatsRow from "@/components/StatsRow";
 import TaskForm from "@/components/TaskForm";
 import TaskList from "@/components/TaskList";
 
@@ -11,6 +14,13 @@ export default function Home() {
   const [items, setItems] = useState<RoutineItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [now, setNow] = useState(() => new Date());
+
+  // Keeps "overdue" detection fresh without requiring a page reload.
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 60_000);
+    return () => clearInterval(id);
+  }, []);
 
   async function loadItems() {
     setLoading(true);
@@ -92,27 +102,35 @@ export default function Home() {
     }
   }
 
-  const doneCount = items.filter((item) => item.done).length;
+  const stats = computeStats(items, now);
 
   return (
-    <div className="flex min-h-full flex-1 flex-col bg-slate-50">
-      <Header total={items.length} completed={doneCount} />
+    <AppShell>
+      <PageHeader stats={stats} />
 
-      <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-6 py-8 sm:px-10">
+      <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-6 px-4 py-6 sm:px-8">
+        {stats.total > 0 && <StatsRow stats={stats} />}
+
         <TaskForm onAdd={handleAdd} />
 
         {error && (
-          <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+          <div className="rounded-xl border border-danger/30 bg-danger-soft px-4 py-3 text-sm text-danger">
             {error}
           </div>
         )}
 
         {loading ? (
-          <p className="text-sm text-slate-400">Carregando tarefas...</p>
+          <p className="text-sm text-foreground-muted">Carregando tarefas...</p>
         ) : (
-          <TaskList items={items} onToggle={handleToggle} onEdit={handleEdit} onDelete={handleDelete} />
+          <TaskList
+            items={items}
+            now={now}
+            onToggle={handleToggle}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+          />
         )}
-      </main>
-    </div>
+      </div>
+    </AppShell>
   );
 }

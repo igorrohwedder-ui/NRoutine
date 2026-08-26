@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { Plus, Tag, Clock, ChevronDown } from "lucide-react";
+import { focusRing } from "./Sidebar";
 
 type NewTask = {
   title: string;
@@ -11,6 +13,9 @@ type NewTask = {
 type Props = {
   onAdd: (task: NewTask) => Promise<void>;
 };
+
+const inputBase =
+  "rounded-lg border border-border bg-surface-2 text-foreground placeholder:text-foreground-muted outline-none transition focus:border-brand";
 
 export default function TaskForm({ onAdd }: Props) {
   const [title, setTitle] = useState("");
@@ -37,43 +42,56 @@ export default function TaskForm({ onAdd }: Props) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-2">
+    <form
+      onSubmit={handleSubmit}
+      className="rounded-xl border border-border bg-surface p-3 sm:p-4"
+    >
       <div className="flex gap-2">
         <input
           type="text"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="O que você precisa fazer hoje?"
-          className="flex-1 rounded-full border border-slate-200 bg-white px-5 py-3 text-sm text-slate-900 shadow-sm outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/20"
+          aria-label="Título da nova tarefa"
+          className={`flex-1 px-3 py-2.5 text-sm focus:ring-2 focus:ring-brand/30 ${inputBase}`}
         />
         <button
           type="submit"
           disabled={!title.trim() || submitting}
-          className="shrink-0 rounded-full bg-brand px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+          className={`flex shrink-0 items-center gap-1.5 rounded-lg bg-brand px-4 py-2.5 text-sm font-medium text-white transition hover:bg-brand/90 disabled:cursor-not-allowed disabled:opacity-40 ${focusRing}`}
         >
-          Adicionar
+          <Plus className="h-4 w-4" aria-hidden="true" />
+          <span className="hidden sm:inline">Adicionar</span>
         </button>
       </div>
 
       {showDetails ? (
-        <div className="flex flex-wrap items-center gap-2 pl-1">
-          <input
-            type="text"
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-            placeholder="Categoria (ex: Manhã, Trabalho)"
-            className="w-48 rounded-full border border-slate-200 bg-white px-4 py-1.5 text-xs text-slate-600 outline-none focus:border-brand focus:ring-2 focus:ring-brand/20"
-          />
-          <input
-            type="time"
-            value={time}
-            onChange={(e) => setTime(e.target.value)}
-            className="rounded-full border border-slate-200 bg-white px-4 py-1.5 text-xs text-slate-600 outline-none focus:border-brand focus:ring-2 focus:ring-brand/20"
-          />
+        <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-border pt-3">
+          <div className="relative">
+            <Tag className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-foreground-muted" aria-hidden="true" />
+            <input
+              type="text"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              placeholder="Categoria (ex: Manhã, Trabalho)"
+              aria-label="Categoria da tarefa"
+              className={`w-48 py-1.5 pl-8 pr-3 text-xs focus:ring-2 focus:ring-brand/30 ${inputBase}`}
+            />
+          </div>
+          <div className="relative">
+            <Clock className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-foreground-muted" aria-hidden="true" />
+            <input
+              type="time"
+              value={time}
+              onChange={(e) => setTime(e.target.value)}
+              aria-label="Horário da tarefa"
+              className={`py-1.5 pl-8 pr-3 text-xs focus:ring-2 focus:ring-brand/30 ${inputBase}`}
+            />
+          </div>
           <button
             type="button"
             onClick={() => setShowDetails(false)}
-            className="text-xs font-medium text-slate-400 hover:text-slate-600"
+            className={`rounded-md px-2 py-1 text-xs font-medium text-foreground-muted hover:text-foreground-secondary ${focusRing}`}
           >
             ocultar
           </button>
@@ -82,9 +100,10 @@ export default function TaskForm({ onAdd }: Props) {
         <button
           type="button"
           onClick={() => setShowDetails(true)}
-          className="self-start pl-1 text-xs font-medium text-brand hover:underline"
+          className={`mt-2 flex items-center gap-1 rounded-md px-1 py-0.5 text-xs font-medium text-foreground-secondary hover:text-foreground ${focusRing}`}
         >
-          + categoria / horário
+          <ChevronDown className="h-3.5 w-3.5" aria-hidden="true" />
+          Categoria / horário
         </button>
       )}
     </form>
