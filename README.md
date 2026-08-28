@@ -1,3 +1,15 @@
+# NRoutine
+
+Site de gerenciamento de tarefas (Next.js + Supabase).
+
+## Referências de UI/UX
+
+A pasta [`Referencias/`](./Referencias) guarda imagens de referência visual
+(mockups, inspirações de layout/cor). Consulte-as antes de fazer mudanças
+na interface, para manter consistência com a direção visual definida.
+
+---
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started
