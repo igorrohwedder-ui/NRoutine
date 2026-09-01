@@ -55,3 +55,16 @@ body {
 * {
   border-color: var(--border);
 }
+
+/*
+ * Subtle brand glow behind the content area. Registered as a deliberate
+ * exception to the "avoid decorative gradients" rule in specs/design.md —
+ * kept at very low opacity so it adds depth without saturating the UI.
+ */
+.app-canvas {
+  background-image: radial-gradient(
+    ellipse 100% 60% at 50% 0%,
+    color-mix(in srgb, var(--brand) 7%, transparent),
+    transparent 70%
+  );
+}

@@ -83,11 +83,28 @@ Fundo `surface`, borda 1px `border` (`border-danger/30` quando atrasado),
 `hover:border-border-strong`, sem sombra. Checkbox quadrado
 (`rounded-md`), não circular — mais "enterprise" que "consumer".
 
+**Hierarquia interna do card de tarefa** (de cima para baixo): tags →
+título → metadados (atrasada, recorrência, prioridade, vencimento). A
+categorização vem primeiro para permitir varredura vertical rápida.
+
 ## Tags, prioridade e status
 
 Badges pequenos (`rounded-full`, `text-[11px]`), sempre ícone + texto —
 nunca só cor (acessibilidade). Prioridade usa direção (seta pra baixo/
 traço/seta pra cima), não semáforo de cores puro.
+
+**Cor das tags**: cada tag recebe um tom estável derivado do nome
+(`tagTone()` / `tagDot()` em `lib/tags.ts`), sorteado entre 7 tons
+dessaturados (sky, violeta, esmeralda, âmbar, rosa, ciano, índigo) no
+formato `border-*/20 bg-*/10 text-*-300`. Não há coluna de cor no banco —
+o mesmo nome sempre produz o mesmo tom. O nome da tag está sempre visível,
+então a cor é decoração, nunca o único sinal.
+
+## Cabeçalho de seção
+
+Ponto colorido (`h-1.5 w-1.5`) + título + contador em pílula
+(`SectionHeader`). O ponto indica o tipo da seção: `brand` para o que é
+acionável hoje, `success` para projetos, neutro para o resto.
 
 ## Tratamento de fotografia / imagens do produto
 
@@ -114,8 +131,12 @@ com `transition-all duration-500`. Sem animações decorativas.
 
 - Gradientes grandes/decorativos, sombras pesadas, excesso de cor —
   contraria a direção "profissional, não chamativo" já aprovada.
+  **Exceção aprovada (ago/2026)**: a área de conteúdo (`.app-canvas` em
+  `globals.css`) tem um brilho radial da cor de marca a 7% de opacidade,
+  para tirar a chapação do fundo. É a única exceção — qualquer outro
+  gradiente continua vetado.
 - Modo claro (não implementado, não solicitado).
-- Emojis como substituto de ícone teu produto (ok em estado vazio
+- Emojis como substituto de ícone no produto (ok em estado vazio
   pontual, não como padrão).
 - Copiar layout, texto, logotipo ou identidade das imagens em
   `Referencias/` de forma literal — usar só como direção de estrutura e

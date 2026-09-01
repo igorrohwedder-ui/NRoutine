@@ -187,13 +187,15 @@ export default function ProjectCard({
                 style={{ width: `${progress}%` }}
               />
             </div>
-            <span className="shrink-0 text-xs font-medium text-foreground-secondary">{progress}%</span>
+            <span className="shrink-0 text-xs font-medium text-foreground-secondary">
+              {tasks.length > 0 && (
+                <span className="text-foreground-muted">
+                  {completedCount}/{tasks.length} ·{" "}
+                </span>
+              )}
+              {progress}%
+            </span>
           </div>
-          {tasks.length > 0 && (
-            <p className="mt-1 text-[11px] text-foreground-muted">
-              {completedCount} de {tasks.length} tarefas concluídas
-            </p>
-          )}
         </div>
 
         <div className="relative shrink-0">

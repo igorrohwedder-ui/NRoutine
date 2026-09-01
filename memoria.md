@@ -29,6 +29,15 @@ as regras de trabalho e [specs/](specs/) para as especificações atuais.
   futuras, então "esta e as futuras" seria idêntico a "toda a série".
 - `agentRules: false` em `next.config.ts` — necessário para o Next.js não
   sobrescrever este conjunto de documentos a cada `dev`/`build`.
+- Evolução visual a partir de `Referencias/` (ago/2026): cabeçalhos de
+  seção com contador, tags com cor própria derivada do nome, tags no topo
+  do card, bloco de tags na sidebar com contagem, fração `X/Y` no card de
+  projeto.
+- Filtro por tag consolidado na sidebar — os chips de tag do FilterBar
+  foram removidos para não existirem dois controles do mesmo estado.
+- **Exceção à regra "evitar gradientes"**: aprovado um brilho radial de
+  7% da cor de marca na área de conteúdo (`.app-canvas`). Registrado em
+  specs/design.md como a única exceção.
 
 ## Decisões rejeitadas
 
@@ -38,6 +47,10 @@ as regras de trabalho e [specs/](specs/) para as especificações atuais.
   Calendário, Relatórios, Equipe, Configurações) — rejeitado por simular
   funcionalidade que não existe; ficam visíveis mas desabilitadas
   ("em breve").
+- Site institucional/marketing do NRoutine — avaliado a pedido do usuário
+  e descartado: um site de venda não faz sentido para uma ferramenta de
+  uso interno, cujo público já é a própria equipe. Reavaliar só se o
+  produto for oferecido a outras empresas.
 
 ## Alterações realizadas (ordem cronológica resumida)
 
@@ -55,6 +68,9 @@ as regras de trabalho e [specs/](specs/) para as especificações atuais.
 6. Pasta `Referencias/` criada para imagens de UI/UX fornecidas pelo
    usuário (2 imagens salvas até agora — ver `Referencias/README.md`).
 7. Documentação formal do projeto (este arquivo + CLAUDE.md + specs/).
+8. Evolução visual inspirada em `Referencias/`: contadores por seção,
+   cores de tag, hierarquia do card, bloco de tags na sidebar,
+   gradiente sutil na área de conteúdo.
 
 ## Problemas encontrados
 
@@ -68,6 +84,9 @@ as regras de trabalho e [specs/](specs/) para as especificações atuais.
   ser detectado.
 - GitHub não aceita mais senha da conta para `git push` via HTTPS —
   precisa de token de acesso pessoal.
+- **Dados expostos**: o app está publicado em `n-routine.vercel.app` com
+  política pública no Supabase — qualquer pessoa com a URL lê, edita e
+  apaga tudo. Sem login, sem isolamento por usuário.
 
 ## Soluções aplicadas
 
@@ -88,5 +107,8 @@ as regras de trabalho e [specs/](specs/) para as especificações atuais.
 
 ## Próximos passos
 
-Aguardando indicação do usuário — nenhuma feature nova planejada até o
-momento além do que está em "Pendências".
+1. **Autenticação + RLS por usuário/empresa** (recomendado como prioridade:
+   resolve a exposição pública dos dados e atende o público-alvo "equipe"
+   registrado nas specs).
+2. Tela de login — a única página pública que o produto precisa.
+3. Definir o software que será integrado no futuro.

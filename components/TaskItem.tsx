@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Check, Trash2, AlertTriangle, CalendarDays, Repeat } from "lucide-react";
 import type { Priority, RoutineItem, Tag } from "@/lib/types";
 import { formatDueDate, PRIORITY_LABELS } from "@/lib/taskStatus";
+import { tagTone } from "@/lib/tags";
 import { focusRing } from "./Sidebar";
 import PriorityToggle from "./PriorityToggle";
 import TagPicker from "./TagPicker";
@@ -86,6 +87,7 @@ export default function TaskItem({
   }
 
   const dueDate = formatDueDate(item.due_date);
+  const hasMeta = Boolean(dueDate || item.priority || overdue || recurrenceLabel);
 
   return (
     <li
@@ -174,6 +176,19 @@ export default function TaskItem({
             aria-label={`Editar tarefa: ${item.title}`}
             className={`flex w-full flex-col items-start gap-1.5 rounded-md text-left ${focusRing}`}
           >
+            {itemTags.length > 0 && (
+              <span className="flex flex-wrap items-center gap-1">
+                {itemTags.map((tag) => (
+                  <span
+                    key={tag.id}
+                    className={`rounded-full border px-2 py-0.5 text-[11px] font-medium ${tagTone(tag.name)}`}
+                  >
+                    {tag.name}
+                  </span>
+                ))}
+              </span>
+            )}
+
             <span
               className={`truncate text-sm ${
                 item.done ? "text-foreground-secondary line-through" : "text-foreground"
@@ -181,7 +196,8 @@ export default function TaskItem({
             >
               {item.title}
             </span>
-            {(itemTags.length > 0 || dueDate || item.priority || overdue || recurrenceLabel) && (
+
+            {hasMeta && (
               <span className="flex flex-wrap items-center gap-1.5">
                 {overdue && (
                   <span className="flex items-center gap-1 rounded-full border border-danger/30 bg-danger-soft px-2 py-0.5 text-[11px] font-medium text-danger">
@@ -202,14 +218,6 @@ export default function TaskItem({
                     {PRIORITY_LABELS[item.priority]}
                   </span>
                 )}
-                {itemTags.map((tag) => (
-                  <span
-                    key={tag.id}
-                    className="rounded-full border border-brand/20 bg-brand-soft px-2 py-0.5 text-[11px] font-medium text-brand"
-                  >
-                    {tag.name}
-                  </span>
-                ))}
                 {dueDate && (
                   <span className="flex items-center gap-1 text-[11px] text-foreground-muted">
                     <CalendarDays className="h-3 w-3" aria-hidden="true" />

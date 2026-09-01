@@ -2,14 +2,16 @@
 
 import { useState, type ReactNode } from "react";
 import { Menu, X } from "lucide-react";
-import Sidebar, { Brand, SidebarNav, focusRing } from "./Sidebar";
+import Sidebar, { Brand, SidebarNav, SidebarTags, focusRing, type TagFilterProps } from "./Sidebar";
 
-export default function AppShell({ children }: { children: ReactNode }) {
+type Props = TagFilterProps & { children: ReactNode };
+
+export default function AppShell({ children, ...tagProps }: Props) {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
     <div className="flex min-h-full flex-1 bg-background">
-      <Sidebar />
+      <Sidebar {...tagProps} />
 
       {/* Mobile drawer */}
       {mobileOpen && (
@@ -31,7 +33,10 @@ export default function AppShell({ children }: { children: ReactNode }) {
                 <X className="h-5 w-5" aria-hidden="true" />
               </button>
             </div>
-            <SidebarNav />
+            <div className="flex-1 overflow-y-auto">
+              <SidebarNav />
+              <SidebarTags {...tagProps} />
+            </div>
           </div>
         </div>
       )}
@@ -55,7 +60,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
           </button>
         </header>
 
-        <main className="flex min-w-0 flex-1 flex-col">{children}</main>
+        <main className="app-canvas flex min-w-0 flex-1 flex-col">{children}</main>
       </div>
     </div>
   );

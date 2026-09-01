@@ -21,6 +21,7 @@ import TaskList from "@/components/TaskList";
 import RecurringTaskList from "@/components/RecurringTaskList";
 import ProjectsSection from "@/components/ProjectsSection";
 import FilterBar, { type RoutineFilter } from "@/components/FilterBar";
+import SectionHeader from "@/components/SectionHeader";
 import type { EditScope } from "@/components/TaskItem";
 
 type TaskEdits = {
@@ -474,8 +475,22 @@ export default function Home() {
   const visibleProjects = activeTagId ? [] : filterProjects(projects, filter, now);
   const showProjectsSection = visibility.projects && !activeTagId;
 
+  // Open-task count per tag, shown next to each tag in the sidebar.
+  const tagCounts = new Map<string, number>();
+  for (const item of items) {
+    if (item.done) continue;
+    for (const tagId of item.tag_ids) {
+      tagCounts.set(tagId, (tagCounts.get(tagId) ?? 0) + 1);
+    }
+  }
+
   return (
-    <AppShell>
+    <AppShell
+      tags={tags}
+      tagCounts={tagCounts}
+      activeTagId={activeTagId}
+      onTagChange={setActiveTagId}
+    >
       <PageHeader stats={stats} />
 
       <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-6 px-4 py-6 sm:px-8">
@@ -488,13 +503,7 @@ export default function Home() {
           onAddProject={handleAddProject}
         />
 
-        <FilterBar
-          value={filter}
-          onChange={setFilter}
-          tags={tags}
-          activeTagId={activeTagId}
-          onTagChange={setActiveTagId}
-        />
+        <FilterBar value={filter} onChange={setFilter} />
 
         {error && (
           <div className="rounded-xl border border-danger/30 bg-danger-soft px-4 py-3 text-sm text-danger">
@@ -508,7 +517,7 @@ export default function Home() {
           <div className="flex flex-col gap-8">
             {visibility.operational && (
               <section className="flex flex-col gap-3">
-                <h2 className="text-sm font-semibold text-foreground">Tarefas de hoje</h2>
+                <SectionHeader title="Tarefas de hoje" count={visibleToday.length} tone="brand" />
                 <TaskList
                   items={visibleToday}
                   now={now}
@@ -524,7 +533,7 @@ export default function Home() {
 
             {visibility.recurring && (
               <section className="flex flex-col gap-3">
-                <h2 className="text-sm font-semibold text-foreground">Tarefas recorrentes</h2>
+                <SectionHeader title="Tarefas recorrentes" count={visibleRecurring.length} />
                 <RecurringTaskList
                   items={visibleRecurring}
                   recurrences={recurrences}
@@ -540,7 +549,7 @@ export default function Home() {
 
             {showProjectsSection && (
               <section className="flex flex-col gap-3">
-                <h2 className="text-sm font-semibold text-foreground">Projetos ativos</h2>
+                <SectionHeader title="Projetos ativos" count={visibleProjects.length} tone="success" />
                 <ProjectsSection
                   projects={visibleProjects}
                   tasksByProject={tasksByProject}
