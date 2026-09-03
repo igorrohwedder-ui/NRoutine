@@ -2,13 +2,14 @@
 
 import { useState } from "react";
 import { FolderKanban } from "lucide-react";
-import type { Priority, Project, RoutineItem, Tag } from "@/lib/types";
+import type { Priority, RoutineItemUpdate, Project, RoutineItem, Tag } from "@/lib/types";
 import { projectDeadlineStatus } from "@/lib/projects";
 import ProjectCard from "./ProjectCard";
 import type { EditScope } from "./TaskItem";
 
 type Edits = {
   title: string;
+  description: string | null;
   tag_ids: string[];
   priority: Priority | null;
   due_date: string | null;
@@ -24,6 +25,8 @@ type Props = {
   now: Date;
   allTags: Tag[];
   onCreateTag: (name: string) => Promise<Tag | null>;
+  updatesByItem: Map<string, RoutineItemUpdate[]>;
+  onAddUpdate: (taskId: string, text: string) => Promise<void>;
   onUpdate: (id: string, edits: ProjectEdits) => void;
   onDelete: (id: string) => void;
   onAddTask: (projectId: string, title: string) => void;
@@ -38,6 +41,8 @@ export default function ProjectsSection({
   now,
   allTags,
   onCreateTag,
+  updatesByItem,
+  onAddUpdate,
   onUpdate,
   onDelete,
   onAddTask,
@@ -88,6 +93,8 @@ export default function ProjectsSection({
             now={now}
             allTags={allTags}
             onCreateTag={onCreateTag}
+            updatesByItem={updatesByItem}
+            onAddUpdate={onAddUpdate}
             expanded={expandedIds.has(project.id)}
             onToggleExpand={() => toggleExpand(project.id)}
             onUpdate={onUpdate}

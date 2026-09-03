@@ -48,6 +48,25 @@ as regras de trabalho e [specs/](specs/) para as especificações atuais.
   Concluídas/Atrasadas) são um eixo diferente e não se aplicam a ela.
 - Tarefas de projeto **não** entram em "Próximas" — elas já são visíveis
   dentro do card do projeto, e incluí-las duplicaria a exibição.
+- Descrição + histórico de atualizações da tarefa (set/2026). Decisões:
+  - **Tabela separada** `routine_item_updates` em vez de array JSON dentro
+    da task. O schema do projeto é todo normalizado (`tags`,
+    `routine_item_tags`, `recurrences`), e um array exigiria
+    read-modify-write — duas pessoas anotando ao mesmo tempo sobrescreveriam
+    uma à outra. Custo: uma query a mais no carregamento.
+  - **Descrição faz parte do molde da série**: `recurrences.description`
+    existe, então a próxima ocorrência gerada herda os detalhes de execução,
+    igual a título/prioridade. Já o log de atualizações é **por ocorrência**
+    — uma anotação se refere àquele dia específico.
+  - **Atualizações salvam na hora**, fora do fluxo Salvar/Cancelar do
+    formulário: são fatos que aconteceram, não rascunho. Cancelar a edição
+    não desfaz uma atualização registrada.
+  - Descrição **não** entra no formulário de criação rápida, para não
+    sobrecarregá-lo (regra já existente em design.md); adiciona-se ao abrir
+    a tarefa.
+  - Carregamento: todas as atualizações vêm no load inicial, como o resto do
+    app. Se o volume crescer muito, será o primeiro lugar a precisar de
+    paginação.
 
 ## Decisões rejeitadas
 
@@ -83,6 +102,8 @@ as regras de trabalho e [specs/](specs/) para as especificações atuais.
    gradiente sutil na área de conteúdo.
 9. Aba "Próximas" com agrupamento por período (`groupUpcoming` em
    `lib/taskStatus.ts`, componente `UpcomingList`).
+10. Campo de descrição e histórico de atualizações por tarefa
+    (`routine_items.description`, tabela `routine_item_updates`).
 
 ## Problemas encontrados
 

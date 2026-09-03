@@ -16,6 +16,7 @@ create table if not exists recurrences (
   id uuid primary key default gen_random_uuid(),
   -- molde usado para gerar novas ocorrências
   title text not null,
+  description text, -- herdada pelas ocorrências geradas
   category text, -- não usado pelo app (ver nota acima)
   time time,     -- não usado pelo app (ver nota acima)
   priority text check (priority in ('low', 'medium', 'high')),
@@ -54,11 +55,22 @@ create table if not exists routine_items (
   category text, -- não usado pelo app (ver nota acima)
   done boolean not null default false,
   created_at timestamptz not null default now(),
+  description text,
   priority text check (priority in ('low', 'medium', 'high')),
   due_date date,
   recurrence_id uuid references recurrences(id) on delete set null,
   project_id uuid references projects(id) on delete set null
 );
+
+create table if not exists routine_item_updates (
+  id uuid primary key default gen_random_uuid(),
+  routine_item_id uuid not null references routine_items(id) on delete cascade,
+  text text not null,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists routine_item_updates_item_idx
+  on routine_item_updates (routine_item_id, created_at desc);
 
 create table if not exists routine_item_tags (
   routine_item_id uuid not null references routine_items(id) on delete cascade,
@@ -71,6 +83,7 @@ alter table recurrences enable row level security;
 alter table projects enable row level security;
 alter table tags enable row level security;
 alter table routine_item_tags enable row level security;
+alter table routine_item_updates enable row level security;
 
 drop policy if exists "acesso publico" on routine_items;
 create policy "acesso publico" on routine_items for all using (true) with check (true);
@@ -86,6 +99,9 @@ create policy "acesso publico" on tags for all using (true) with check (true);
 
 drop policy if exists "acesso publico" on routine_item_tags;
 create policy "acesso publico" on routine_item_tags for all using (true) with check (true);
+
+drop policy if exists "acesso publico" on routine_item_updates;
+create policy "acesso publico" on routine_item_updates for all using (true) with check (true);
 
 insert into tags (name) values ('Operacional'), ('Estratégico')
 on conflict (name) do nothing;

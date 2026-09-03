@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Check, Trash2, AlertTriangle, CalendarDays, Repeat } from "lucide-react";
-import type { Priority, RoutineItem, Tag } from "@/lib/types";
-import { formatDueDate, PRIORITY_LABELS } from "@/lib/taskStatus";
+import { Check, Trash2, AlertTriangle, CalendarDays, Repeat, MessageSquare, Plus } from "lucide-react";
+import type { Priority, RoutineItem, RoutineItemUpdate, Tag } from "@/lib/types";
+import { formatDueDate, formatUpdateTimestamp, PRIORITY_LABELS } from "@/lib/taskStatus";
 import { tagTone } from "@/lib/tags";
 import { focusRing } from "./Sidebar";
 import PriorityToggle from "./PriorityToggle";
@@ -13,6 +13,7 @@ export type EditScope = "occurrence" | "series";
 
 type Edits = {
   title: string;
+  description: string | null;
   tag_ids: string[];
   priority: Priority | null;
   due_date: string | null;
@@ -23,6 +24,9 @@ type Props = {
   overdue: boolean;
   allTags: Tag[];
   onCreateTag: (name: string) => Promise<Tag | null>;
+  /** Newest first. */
+  updates: RoutineItemUpdate[];
+  onAddUpdate: (taskId: string, text: string) => Promise<void>;
   /** Human-readable recurrence summary, when this occurrence belongs to a series. */
   recurrenceLabel?: string | null;
   onToggle: (id: string, done: boolean) => void;
@@ -44,6 +48,8 @@ export default function TaskItem({
   overdue,
   allTags,
   onCreateTag,
+  updates,
+  onAddUpdate,
   recurrenceLabel,
   onToggle,
   onEdit,
@@ -52,15 +58,19 @@ export default function TaskItem({
   const [editing, setEditing] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [titleDraft, setTitleDraft] = useState(item.title);
+  const [descriptionDraft, setDescriptionDraft] = useState(item.description ?? "");
   const [tagIdsDraft, setTagIdsDraft] = useState<string[]>(item.tag_ids);
   const [priorityDraft, setPriorityDraft] = useState<Priority | null>(item.priority);
   const [dueDateDraft, setDueDateDraft] = useState(item.due_date ?? "");
+  const [updateDraft, setUpdateDraft] = useState("");
+  const [savingUpdate, setSavingUpdate] = useState(false);
 
   const isRecurring = Boolean(item.recurrence_id);
   const itemTags = allTags.filter((tag) => item.tag_ids.includes(tag.id));
 
   function startEdit() {
     setTitleDraft(item.title);
+    setDescriptionDraft(item.description ?? "");
     setTagIdsDraft(item.tag_ids);
     setPriorityDraft(item.priority);
     setDueDateDraft(item.due_date ?? "");
@@ -77,6 +87,7 @@ export default function TaskItem({
       item.id,
       {
         title: trimmedTitle,
+        description: descriptionDraft.trim() || null,
         tag_ids: tagIdsDraft,
         priority: priorityDraft,
         due_date: dueDateDraft || null,
@@ -86,8 +97,23 @@ export default function TaskItem({
     setEditing(false);
   }
 
+  /** Updates are append-only and save immediately — they don't wait for "Salvar". */
+  async function handleAddUpdate(e: React.FormEvent) {
+    e.preventDefault();
+    const text = updateDraft.trim();
+    if (!text || savingUpdate) return;
+
+    setSavingUpdate(true);
+    try {
+      await onAddUpdate(item.id, text);
+      setUpdateDraft("");
+    } finally {
+      setSavingUpdate(false);
+    }
+  }
+
   const dueDate = formatDueDate(item.due_date);
-  const hasMeta = Boolean(dueDate || item.priority || overdue || recurrenceLabel);
+  const hasMeta = Boolean(dueDate || item.priority || overdue || recurrenceLabel || updates.length > 0);
 
   return (
     <li
@@ -122,7 +148,18 @@ export default function TaskItem({
               aria-label="Editar título da tarefa"
               className={`px-2 py-1 text-sm ${inputBase}`}
             />
+
+            <textarea
+              value={descriptionDraft}
+              onChange={(e) => setDescriptionDraft(e.target.value)}
+              rows={3}
+              placeholder="Descrição — detalhes do que precisa ser feito"
+              aria-label="Descrição da tarefa"
+              className={`resize-y px-2 py-1 text-xs ${inputBase}`}
+            />
+
             <TagPicker allTags={allTags} selectedIds={tagIdsDraft} onChange={setTagIdsDraft} onCreateTag={onCreateTag} />
+
             <div className="flex flex-wrap items-center gap-2">
               <input
                 type="date"
@@ -133,6 +170,7 @@ export default function TaskItem({
               />
               <PriorityToggle value={priorityDraft} onChange={setPriorityDraft} compact />
             </div>
+
             <div className="flex flex-wrap items-center gap-2">
               {isRecurring ? (
                 <>
@@ -168,12 +206,56 @@ export default function TaskItem({
                 Cancelar
               </button>
             </div>
+
+            <div className="flex flex-col gap-2 border-t border-border pt-2">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-foreground-muted">
+                Atualizações
+              </p>
+
+              <form onSubmit={handleAddUpdate} className="flex gap-2">
+                <input
+                  value={updateDraft}
+                  onChange={(e) => setUpdateDraft(e.target.value)}
+                  placeholder="Registrar uma atualização"
+                  aria-label="Nova atualização"
+                  className={`flex-1 px-2 py-1 text-xs ${inputBase}`}
+                />
+                <button
+                  type="submit"
+                  disabled={!updateDraft.trim() || savingUpdate}
+                  className={`flex shrink-0 items-center gap-1 rounded-md bg-brand px-2.5 py-1 text-xs font-medium text-white hover:bg-brand/90 disabled:cursor-not-allowed disabled:opacity-40 ${focusRing}`}
+                >
+                  <Plus className="h-3 w-3" aria-hidden="true" />
+                  Adicionar
+                </button>
+              </form>
+
+              {updates.length === 0 ? (
+                <p className="text-[11px] text-foreground-muted">
+                  Nenhuma atualização ainda. As anotações ficam registradas aqui, com data e hora.
+                </p>
+              ) : (
+                <ol className="flex flex-col gap-1.5">
+                  {updates.map((update) => (
+                    <li
+                      key={update.id}
+                      className="rounded-lg border border-border bg-surface-2 px-2.5 py-1.5"
+                    >
+                      <p className="whitespace-pre-wrap break-words text-xs text-foreground">{update.text}</p>
+                      <p className="mt-0.5 text-[11px] text-foreground-muted">
+                        {formatUpdateTimestamp(update.created_at)}
+                      </p>
+                    </li>
+                  ))}
+                </ol>
+              )}
+            </div>
           </div>
         ) : (
           <button
             type="button"
             onClick={startEdit}
-            aria-label={`Editar tarefa: ${item.title}`}
+            aria-label={`Abrir tarefa: ${item.title}`}
             className={`flex w-full flex-col items-start gap-1.5 rounded-md text-left ${focusRing}`}
           >
             {itemTags.length > 0 && (
@@ -196,6 +278,12 @@ export default function TaskItem({
             >
               {item.title}
             </span>
+
+            {item.description && (
+              <span className="line-clamp-2 w-full break-words text-xs text-foreground-secondary">
+                {item.description}
+              </span>
+            )}
 
             {hasMeta && (
               <span className="flex flex-wrap items-center gap-1.5">
@@ -222,6 +310,15 @@ export default function TaskItem({
                   <span className="flex items-center gap-1 text-[11px] text-foreground-muted">
                     <CalendarDays className="h-3 w-3" aria-hidden="true" />
                     {dueDate}
+                  </span>
+                )}
+                {updates.length > 0 && (
+                  <span
+                    className="flex items-center gap-1 text-[11px] text-foreground-muted"
+                    aria-label={`${updates.length} ${updates.length === 1 ? "atualização" : "atualizações"}`}
+                  >
+                    <MessageSquare className="h-3 w-3" aria-hidden="true" />
+                    {updates.length}
                   </span>
                 )}
               </span>

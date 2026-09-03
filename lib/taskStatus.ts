@@ -90,3 +90,13 @@ export function groupUpcoming(items: RoutineItem[], now: Date): UpcomingGroups {
 
   return groups;
 }
+
+/** "03/09 às 14:32" — local time, for the update log. */
+export function formatUpdateTimestamp(iso: string) {
+  return new Date(iso).toLocaleString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}

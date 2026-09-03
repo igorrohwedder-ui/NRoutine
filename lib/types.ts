@@ -13,6 +13,8 @@ export type RecurrenceUnit = "day" | "week" | "month" | "year" | "month_period";
 export type Recurrence = {
   id: string;
   title: string;
+  /** Carried into every generated occurrence, like title/priority. */
+  description: string | null;
   priority: Priority | null;
   frequency: RecurrenceFrequency;
   unit: RecurrenceUnit;
@@ -30,10 +32,20 @@ export type Recurrence = {
   created_at: string;
 };
 
+/** One entry in a task's append-only update log. */
+export type RoutineItemUpdate = {
+  id: string;
+  routine_item_id: string;
+  text: string;
+  created_at: string;
+};
+
 /** A single occurrence of a (possibly recurring) operational task. */
 export type RoutineItem = {
   id: string;
   title: string;
+  /** Free-form details, overwritten on each edit (not a log — see RoutineItemUpdate). */
+  description: string | null;
   done: boolean;
   created_at: string;
   priority: Priority | null;

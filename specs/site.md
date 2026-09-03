@@ -67,6 +67,11 @@ Configurações.
 - Edição/exclusão de recorrência com escopo "apenas esta ocorrência" ou
   "toda a série".
 - Prioridade (baixa/média/alta), data de vencimento, detecção de atraso.
+- **Descrição** da tarefa: campo de texto livre, sobrescrito a cada edição
+  (não é histórico). Aparece resumida no card e editável ao abrir a tarefa.
+- **Histórico de atualizações**: log append-only por tarefa. Cada entrada
+  tem texto livre + data/hora automática, exibidas da mais recente para a
+  mais antiga. Nesta versão não é possível editar nem excluir entradas.
 - Sistema de tags reutilizáveis (substituiu categoria de texto livre);
   criação inline, múltiplas tags por tarefa, filtro dinâmico por tag.
 - Projetos: nome, descrição, datas, prioridade, status, progresso

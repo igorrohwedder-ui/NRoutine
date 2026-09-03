@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
-import type { Priority, Project, Recurrence, RoutineItem, Tag } from "@/lib/types";
+import type { Priority, Project, Recurrence, RoutineItem, RoutineItemUpdate, Tag } from "@/lib/types";
 import { computeStats, isOverdue, isUpcoming } from "@/lib/taskStatus";
 import {
   computeNextOccurrenceDate,
@@ -27,6 +27,7 @@ import type { EditScope } from "@/components/TaskItem";
 
 type TaskEdits = {
   title: string;
+  description: string | null;
   tag_ids: string[];
   priority: Priority | null;
   due_date: string | null;
@@ -119,6 +120,7 @@ export default function Home() {
   const [recurrences, setRecurrences] = useState<Map<string, Recurrence>>(new Map());
   const [projects, setProjects] = useState<Project[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
+  const [updatesByItem, setUpdatesByItem] = useState<Map<string, RoutineItemUpdate[]>>(new Map());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [now, setNow] = useState(() => new Date());
@@ -153,10 +155,20 @@ export default function Home() {
       supabase.from("recurrences").select("*"),
       supabase.from("projects").select("*").order("created_at", { ascending: true }),
       supabase.from("tags").select("*").order("created_at", { ascending: true }),
-    ]).then(([itemsResult, recurrencesRes, projectsRes, tagsRes]) => {
+      supabase
+        .from("routine_item_updates")
+        .select("*")
+        // id as a tie-break so the order is stable if two updates share a timestamp.
+        .order("created_at", { ascending: false })
+        .order("id", { ascending: false }),
+    ]).then(([itemsResult, recurrencesRes, projectsRes, tagsRes, updatesRes]) => {
       if (ignore) return;
       const firstError =
-        itemsResult.error ?? recurrencesRes.error?.message ?? projectsRes.error?.message ?? tagsRes.error?.message;
+        itemsResult.error ??
+        recurrencesRes.error?.message ??
+        projectsRes.error?.message ??
+        tagsRes.error?.message ??
+        updatesRes.error?.message;
       if (firstError) {
         setError(firstError);
       } else {
@@ -165,6 +177,15 @@ export default function Home() {
         setRecurrences(new Map((recurrencesRes.data ?? []).map((r) => [r.id, r as Recurrence])));
         setProjects(projectsRes.data ?? []);
         setTags(tagsRes.data ?? []);
+
+        // Already sorted newest-first by the query above.
+        const grouped = new Map<string, RoutineItemUpdate[]>();
+        for (const row of (updatesRes.data ?? []) as RoutineItemUpdate[]) {
+          const list = grouped.get(row.routine_item_id) ?? [];
+          list.push(row);
+          grouped.set(row.routine_item_id, list);
+        }
+        setUpdatesByItem(grouped);
       }
       setLoading(false);
     });
@@ -193,6 +214,31 @@ export default function Home() {
     }
     setTags((prev) => [...prev, data]);
     return data;
+  }
+
+  // ---------- Task update log ----------
+
+  /**
+   * Append-only: saves immediately instead of waiting for the edit form's
+   * "Salvar", since an update is a fact that happened, not a draft.
+   */
+  async function handleAddUpdate(taskId: string, text: string) {
+    const { data, error } = await supabase
+      .from("routine_item_updates")
+      .insert({ routine_item_id: taskId, text })
+      .select()
+      .single();
+
+    if (error) {
+      setError(error.message);
+      return;
+    }
+
+    setUpdatesByItem((prev) => {
+      const next = new Map(prev);
+      next.set(taskId, [data as RoutineItemUpdate, ...(next.get(taskId) ?? [])]);
+      return next;
+    });
   }
 
   // ---------- Operational / recurring tasks ----------
@@ -309,6 +355,7 @@ export default function Home() {
       .from("routine_items")
       .insert({
         title: rule.title,
+        description: rule.description,
         priority: rule.priority,
         due_date: toDateString(nextDate),
         recurrence_id: rule.id,
@@ -351,7 +398,11 @@ export default function Home() {
     await replaceTagsForItem(id, tag_ids);
 
     if (scope === "series" && item?.recurrence_id) {
-      const templateEdits = { title: edits.title, priority: edits.priority };
+      const templateEdits = {
+        title: edits.title,
+        description: edits.description,
+        priority: edits.priority,
+      };
       const { error: recErr } = await supabase
         .from("recurrences")
         .update(templateEdits)
@@ -537,6 +588,8 @@ export default function Home() {
                   recurrences={recurrences}
                   allTags={tags}
                   onCreateTag={handleCreateTag}
+                  updatesByItem={updatesByItem}
+                  onAddUpdate={handleAddUpdate}
                   onToggle={handleToggle}
                   onEdit={handleEditTask}
                   onDelete={handleDeleteTask}
@@ -553,6 +606,8 @@ export default function Home() {
                   now={now}
                   allTags={tags}
                   onCreateTag={handleCreateTag}
+                  updatesByItem={updatesByItem}
+                  onAddUpdate={handleAddUpdate}
                   onToggle={handleToggle}
                   onEdit={handleEditTask}
                   onDelete={handleDeleteTask}
@@ -569,6 +624,8 @@ export default function Home() {
                   recurrences={recurrences}
                   allTags={tags}
                   onCreateTag={handleCreateTag}
+                  updatesByItem={updatesByItem}
+                  onAddUpdate={handleAddUpdate}
                   onToggle={handleToggle}
                   onEdit={handleEditTask}
                   onDelete={handleDeleteTask}
@@ -585,6 +642,8 @@ export default function Home() {
                   now={now}
                   allTags={tags}
                   onCreateTag={handleCreateTag}
+                  updatesByItem={updatesByItem}
+                  onAddUpdate={handleAddUpdate}
                   onUpdate={handleUpdateProject}
                   onDelete={handleDeleteProject}
                   onAddTask={handleAddProjectTask}

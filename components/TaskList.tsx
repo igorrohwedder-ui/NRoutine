@@ -1,11 +1,12 @@
 import { Sparkles } from "lucide-react";
-import type { Priority, Recurrence, RoutineItem, Tag } from "@/lib/types";
+import type { Priority, RoutineItemUpdate, Recurrence, RoutineItem, Tag } from "@/lib/types";
 import { isOverdue } from "@/lib/taskStatus";
 import { describeRecurrence } from "@/lib/recurrence";
 import TaskItem, { type EditScope } from "./TaskItem";
 
 type Edits = {
   title: string;
+  description: string | null;
   tag_ids: string[];
   priority: Priority | null;
   due_date: string | null;
@@ -18,6 +19,8 @@ type Props = {
   recurrences: Map<string, Recurrence>;
   allTags: Tag[];
   onCreateTag: (name: string) => Promise<Tag | null>;
+  updatesByItem: Map<string, RoutineItemUpdate[]>;
+  onAddUpdate: (taskId: string, text: string) => Promise<void>;
   emptyMessage?: string;
   onToggle: (id: string, done: boolean) => void;
   onEdit: (id: string, edits: Edits, scope: EditScope) => void;
@@ -39,6 +42,8 @@ export default function TaskList({
   recurrences,
   allTags,
   onCreateTag,
+  updatesByItem,
+  onAddUpdate,
   emptyMessage,
   onToggle,
   onEdit,
@@ -67,6 +72,8 @@ export default function TaskList({
             overdue={isOverdue(item, now)}
             allTags={allTags}
             onCreateTag={onCreateTag}
+            updates={updatesByItem.get(item.id) ?? []}
+            onAddUpdate={onAddUpdate}
             recurrenceLabel={rule ? describeRecurrence(rule) : null}
             onToggle={onToggle}
             onEdit={onEdit}
