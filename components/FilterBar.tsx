@@ -2,6 +2,7 @@ export type RoutineFilter =
   | "all"
   | "projects"
   | "recurring"
+  | "upcoming"
   | "completed"
   | "pending"
   | "overdue";
@@ -10,6 +11,7 @@ const FILTERS: { value: RoutineFilter; label: string }[] = [
   { value: "all", label: "Todas" },
   { value: "projects", label: "Projetos" },
   { value: "recurring", label: "Recorrentes" },
+  { value: "upcoming", label: "Próximas" },
   { value: "pending", label: "Pendentes" },
   { value: "completed", label: "Concluídas" },
   { value: "overdue", label: "Atrasadas" },

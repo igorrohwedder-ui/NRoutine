@@ -45,6 +45,11 @@ funcionalidade que não existe.
 - **Tarefas recorrentes** — visão geral das séries recorrentes; mostra só a
   ocorrência em aberto de cada série (desaparece daqui ao ser concluída, a
   próxima ocorrência gerada assume o lugar).
+- **Próximas** — tarefas com data futura (não concluídas), agrupadas por
+  proximidade: *Esta semana* (próximos 7 dias), *Este mês* (do 8º dia até o
+  fim do mês corrente) e *Mais adiante*. Existe porque "Tarefas de hoje" é
+  estritamente do dia: sem esta seção, uma tarefa avulsa agendada para o
+  futuro ficaria inalcançável até a data chegar.
 - **Projetos ativos** — projetos com status, prazo, progresso e checklist de
   tarefas relacionadas.
 
@@ -67,8 +72,8 @@ Configurações.
 - Projetos: nome, descrição, datas, prioridade, status, progresso
   (automático a partir das tarefas relacionadas, ou manual), checklist de
   tarefas do projeto (reaproveita o CRUD normal de tarefas).
-- Filtros: Todas / Projetos / Recorrentes / Pendentes / Concluídas /
-  Atrasadas, combináveis com filtro por tag.
+- Filtros: Todas / Projetos / Recorrentes / Próximas / Pendentes /
+  Concluídas / Atrasadas, combináveis com filtro por tag.
 - Estatísticas do dia: concluídas / pendentes / atrasadas / progresso.
 - Tema escuro fixo (ver design.md).
 

@@ -43,3 +43,50 @@ export function computeStats(items: RoutineItem[], now: Date): RoutineStats {
   const progress = total === 0 ? 0 : Math.round((completed / total) * 100);
   return { total, completed, overdue, pending, progress };
 }
+
+/** A task scheduled for a day after today (and not done yet). */
+export function isUpcoming(item: Pick<RoutineItem, "done" | "due_date">, now: Date) {
+  if (item.done || !item.due_date) return false;
+  const due = startOfDay(new Date(`${item.due_date}T00:00:00`));
+  return due > startOfDay(now);
+}
+
+export type UpcomingGroups = {
+  week: RoutineItem[];
+  month: RoutineItem[];
+  later: RoutineItem[];
+};
+
+/**
+ * Buckets future-dated tasks by how far away they are:
+ * - week:  tomorrow through today + 7 days
+ * - month: day 8 through the end of the current month
+ * - later: anything after that
+ *
+ * All boundaries are local calendar days (never UTC), matching isOverdue and
+ * toDateString. When the 7-day window already runs past the end of the month
+ * (e.g. today is the 28th), the "month" bucket is simply empty and everything
+ * beyond the week falls into "later" — no double counting.
+ */
+export function groupUpcoming(items: RoutineItem[], now: Date): UpcomingGroups {
+  const today = startOfDay(now);
+
+  const weekEnd = new Date(today);
+  weekEnd.setDate(weekEnd.getDate() + 7);
+
+  const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+  const monthBoundary = monthEnd > weekEnd ? monthEnd : weekEnd;
+
+  const groups: UpcomingGroups = { week: [], month: [], later: [] };
+
+  for (const item of items) {
+    if (!item.due_date) continue;
+    const due = startOfDay(new Date(`${item.due_date}T00:00:00`));
+    if (due <= today) continue;
+    if (due <= weekEnd) groups.week.push(item);
+    else if (due <= monthBoundary) groups.month.push(item);
+    else groups.later.push(item);
+  }
+
+  return groups;
+}

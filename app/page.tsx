@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import type { Priority, Project, Recurrence, RoutineItem, Tag } from "@/lib/types";
-import { computeStats, isOverdue } from "@/lib/taskStatus";
+import { computeStats, isOverdue, isUpcoming } from "@/lib/taskStatus";
 import {
   computeNextOccurrenceDate,
   firstMonthPeriodOccurrence,
@@ -22,6 +22,7 @@ import RecurringTaskList from "@/components/RecurringTaskList";
 import ProjectsSection from "@/components/ProjectsSection";
 import FilterBar, { type RoutineFilter } from "@/components/FilterBar";
 import SectionHeader from "@/components/SectionHeader";
+import UpcomingList from "@/components/UpcomingList";
 import type { EditScope } from "@/components/TaskItem";
 
 type TaskEdits = {
@@ -40,6 +41,10 @@ function sectionVisibility(filter: RoutineFilter) {
     operational: filter === "all" || ["completed", "pending", "overdue"].includes(filter),
     recurring: filter === "all" || filter === "recurring" || ["completed", "pending", "overdue"].includes(filter),
     projects: filter === "all" || filter === "projects" || ["completed", "pending", "overdue"].includes(filter),
+    // Future-dated tasks show under "Todas" (so nothing is hidden by default)
+    // and in their own tab. The status filters are a different axis, so they
+    // don't apply here.
+    upcoming: filter === "all" || filter === "upcoming",
   };
 }
 
@@ -475,6 +480,14 @@ export default function Home() {
   const visibleProjects = activeTagId ? [] : filterProjects(projects, filter, now);
   const showProjectsSection = visibility.projects && !activeTagId;
 
+  // Future-dated tasks: they never appear in "Tarefas de hoje" (which is
+  // today-only), so without this list they'd be unreachable until their day.
+  // Project tasks are excluded on purpose — those live inside their project.
+  const upcomingItems = filterByTag(
+    items.filter((i) => !i.project_id && isUpcoming(i, now)),
+    activeTagId,
+  );
+
   // Open-task count per tag, shown next to each tag in the sidebar.
   const tagCounts = new Map<string, number>();
   for (const item of items) {
@@ -538,6 +551,22 @@ export default function Home() {
                   items={visibleRecurring}
                   recurrences={recurrences}
                   now={now}
+                  allTags={tags}
+                  onCreateTag={handleCreateTag}
+                  onToggle={handleToggle}
+                  onEdit={handleEditTask}
+                  onDelete={handleDeleteTask}
+                />
+              </section>
+            )}
+
+            {visibility.upcoming && (
+              <section className="flex flex-col gap-3">
+                <SectionHeader title="Próximas" count={upcomingItems.length} />
+                <UpcomingList
+                  items={upcomingItems}
+                  now={now}
+                  recurrences={recurrences}
                   allTags={tags}
                   onCreateTag={handleCreateTag}
                   onToggle={handleToggle}

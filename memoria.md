@@ -38,6 +38,16 @@ as regras de trabalho e [specs/](specs/) para as especificações atuais.
 - **Exceção à regra "evitar gradientes"**: aprovado um brilho radial de
   7% da cor de marca na área de conteúdo (`.app-canvas`). Registrado em
   specs/design.md como a única exceção.
+- Aba **"Próximas"** (set/2026) para tarefas com data futura. Critérios de
+  agrupamento escolhidos: *Esta semana* = amanhã até hoje+7; *Este mês* =
+  hoje+8 até o fim do mês corrente; *Mais adiante* = depois disso. Quando a
+  janela de 7 dias já passa do fim do mês (ex: dia 28), o grupo "Este mês"
+  fica vazio e o excedente cai em "Mais adiante" — sem contagem dupla.
+- "Próximas" aparece também na aba **Todas** (não só na própria aba), para
+  que a visão padrão não esconda nada. Os filtros de status (Pendentes/
+  Concluídas/Atrasadas) são um eixo diferente e não se aplicam a ela.
+- Tarefas de projeto **não** entram em "Próximas" — elas já são visíveis
+  dentro do card do projeto, e incluí-las duplicaria a exibição.
 
 ## Decisões rejeitadas
 
@@ -71,6 +81,8 @@ as regras de trabalho e [specs/](specs/) para as especificações atuais.
 8. Evolução visual inspirada em `Referencias/`: contadores por seção,
    cores de tag, hierarquia do card, bloco de tags na sidebar,
    gradiente sutil na área de conteúdo.
+9. Aba "Próximas" com agrupamento por período (`groupUpcoming` em
+   `lib/taskStatus.ts`, componente `UpcomingList`).
 
 ## Problemas encontrados
 
@@ -87,6 +99,10 @@ as regras de trabalho e [specs/](specs/) para as especificações atuais.
 - **Dados expostos**: o app está publicado em `n-routine.vercel.app` com
   política pública no Supabase — qualquer pessoa com a URL lê, edita e
   apaga tudo. Sem login, sem isolamento por usuário.
+- **Tarefas futuras inalcançáveis**: uma tarefa avulsa (não recorrente) com
+  data futura não aparecia em nenhuma listagem — "Tarefas de hoje" filtra
+  por `due_date <= hoje` e "Tarefas recorrentes" exige `recurrence_id`.
+  Havia uma tarefa real nessa situação no banco (vencimento 07/09).
 
 ## Soluções aplicadas
 
@@ -96,6 +112,8 @@ as regras de trabalho e [specs/](specs/) para as especificações atuais.
   aberto de cada série (há sempre no máximo uma, por design).
 - `.mcp.json` movido para `/home/igorr/.mcp.json`.
 - Usuário gerou token de acesso pessoal do GitHub para autenticar o push.
+- Criada a aba/seção "Próximas", reaproveitando `TaskList`/`TaskItem` —
+  só o filtro e o agrupamento são novos, o visual do card é o mesmo.
 
 ## Pendências
 
