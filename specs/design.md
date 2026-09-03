@@ -87,6 +87,12 @@ Fundo `surface`, borda 1px `border` (`border-danger/30` quando atrasado),
 título → metadados (atrasada, recorrência, prioridade, vencimento). A
 categorização vem primeiro para permitir varredura vertical rápida.
 
+**Texto longo nunca alarga o card**: título de tarefa usa `line-clamp-3`,
+nome de projeto `line-clamp-2`, ambos com `break-words` (para URLs e
+palavras sem espaço). Nunca usar `truncate` nesses campos — ela aplica
+`white-space: nowrap` e faz o texto esticar em vez de quebrar. `truncate`
+continua correta em linhas de altura fixa, como os itens da sidebar.
+
 ## Tags, prioridade e status
 
 Badges pequenos (`rounded-full`, `text-[11px]`), sempre ícone + texto —

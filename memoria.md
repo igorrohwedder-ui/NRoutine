@@ -103,6 +103,9 @@ as regras de trabalho e [specs/](specs/) para as especificações atuais.
   data futura não aparecia em nenhuma listagem — "Tarefas de hoje" filtra
   por `due_date <= hoje` e "Tarefas recorrentes" exige `recurrence_id`.
   Havia uma tarefa real nessa situação no banco (vencimento 07/09).
+- **Título longo esticava o card**: a classe `truncate` no título aplica
+  `white-space: nowrap`; como o pai é `flex-col items-start`, o texto
+  crescia em vez de quebrar. Mesmo problema latente no nome do projeto.
 
 ## Soluções aplicadas
 
@@ -114,6 +117,9 @@ as regras de trabalho e [specs/](specs/) para as especificações atuais.
 - Usuário gerou token de acesso pessoal do GitHub para autenticar o push.
 - Criada a aba/seção "Próximas", reaproveitando `TaskList`/`TaskItem` —
   só o filtro e o agrupamento são novos, o visual do card é o mesmo.
+- Título da tarefa passou de `truncate` para `line-clamp-3 break-words`
+  (nome do projeto para `line-clamp-2`). Verificado renderizando o
+  componente numa rota temporária e inspecionando o HTML.
 
 ## Pendências
 

@@ -190,7 +190,7 @@ export default function TaskItem({
             )}
 
             <span
-              className={`truncate text-sm ${
+              className={`line-clamp-3 w-full break-words text-sm ${
                 item.done ? "text-foreground-secondary line-through" : "text-foreground"
               }`}
             >

@@ -157,9 +157,9 @@ export default function ProjectCard({
               }}
               className={`flex w-full flex-col items-start gap-0.5 rounded-md text-left ${focusRing}`}
             >
-              <span className="truncate text-sm font-semibold text-foreground">{project.name}</span>
+              <span className="line-clamp-2 w-full break-words text-sm font-semibold text-foreground">{project.name}</span>
               {project.description && (
-                <span className="line-clamp-1 text-xs text-foreground-secondary">{project.description}</span>
+                <span className="line-clamp-1 w-full break-words text-xs text-foreground-secondary">{project.description}</span>
               )}
             </button>
           )}
