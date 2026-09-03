@@ -27,6 +27,7 @@ type Props = {
   onCreateTag: (name: string) => Promise<Tag | null>;
   updatesByItem: Map<string, RoutineItemUpdate[]>;
   onAddUpdate: (taskId: string, text: string) => Promise<void>;
+  onDeleteUpdate: (taskId: string, updateId: string) => Promise<void>;
   onUpdate: (id: string, edits: ProjectEdits) => void;
   onDelete: (id: string) => void;
   onAddTask: (projectId: string, title: string) => void;
@@ -43,6 +44,7 @@ export default function ProjectsSection({
   onCreateTag,
   updatesByItem,
   onAddUpdate,
+  onDeleteUpdate,
   onUpdate,
   onDelete,
   onAddTask,
@@ -95,6 +97,7 @@ export default function ProjectsSection({
             onCreateTag={onCreateTag}
             updatesByItem={updatesByItem}
             onAddUpdate={onAddUpdate}
+            onDeleteUpdate={onDeleteUpdate}
             expanded={expandedIds.has(project.id)}
             onToggleExpand={() => toggleExpand(project.id)}
             onUpdate={onUpdate}

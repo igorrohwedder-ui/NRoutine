@@ -67,6 +67,11 @@ as regras de trabalho e [specs/](specs/) para as especificações atuais.
   - Carregamento: todas as atualizações vêm no load inicial, como o resto do
     app. Se o volume crescer muito, será o primeiro lugar a precisar de
     paginação.
+  - Exclusão de uma atualização isolada segue o padrão de exclusão do app:
+    lixeira revelada no hover e remoção imediata com rollback em caso de
+    erro (mesmo comportamento de excluir uma tarefa avulsa), sem diálogo de
+    confirmação. Editar o texto de uma entrada continua fora de escopo — um
+    log deve registrar o que foi dito, não permitir reescrever.
 
 ## Decisões rejeitadas
 

@@ -21,6 +21,7 @@ type Props = {
   onCreateTag: (name: string) => Promise<Tag | null>;
   updatesByItem: Map<string, RoutineItemUpdate[]>;
   onAddUpdate: (taskId: string, text: string) => Promise<void>;
+  onDeleteUpdate: (taskId: string, updateId: string) => Promise<void>;
   onToggle: (id: string, done: boolean) => void;
   onEdit: (id: string, edits: Edits, scope: EditScope) => void;
   onDelete: (id: string, scope: EditScope) => void;

@@ -21,6 +21,7 @@ type Props = {
   onCreateTag: (name: string) => Promise<Tag | null>;
   updatesByItem: Map<string, RoutineItemUpdate[]>;
   onAddUpdate: (taskId: string, text: string) => Promise<void>;
+  onDeleteUpdate: (taskId: string, updateId: string) => Promise<void>;
   emptyMessage?: string;
   onToggle: (id: string, done: boolean) => void;
   onEdit: (id: string, edits: Edits, scope: EditScope) => void;
@@ -44,6 +45,7 @@ export default function TaskList({
   onCreateTag,
   updatesByItem,
   onAddUpdate,
+  onDeleteUpdate,
   emptyMessage,
   onToggle,
   onEdit,
@@ -74,6 +76,7 @@ export default function TaskList({
             onCreateTag={onCreateTag}
             updates={updatesByItem.get(item.id) ?? []}
             onAddUpdate={onAddUpdate}
+            onDeleteUpdate={onDeleteUpdate}
             recurrenceLabel={rule ? describeRecurrence(rule) : null}
             onToggle={onToggle}
             onEdit={onEdit}

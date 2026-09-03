@@ -29,6 +29,7 @@ type Props = {
   onCreateTag: (name: string) => Promise<Tag | null>;
   updatesByItem: Map<string, RoutineItemUpdate[]>;
   onAddUpdate: (taskId: string, text: string) => Promise<void>;
+  onDeleteUpdate: (taskId: string, updateId: string) => Promise<void>;
   expanded: boolean;
   onToggleExpand: () => void;
   onUpdate: (id: string, edits: ProjectEdits) => void;
@@ -66,6 +67,7 @@ export default function ProjectCard({
   onCreateTag,
   updatesByItem,
   onAddUpdate,
+  onDeleteUpdate,
   expanded,
   onToggleExpand,
   onUpdate,
@@ -316,6 +318,7 @@ export default function ProjectCard({
                     onCreateTag={onCreateTag}
                     updates={updatesByItem.get(task.id) ?? []}
                     onAddUpdate={onAddUpdate}
+                    onDeleteUpdate={onDeleteUpdate}
                     onToggle={onToggleTask}
                     onEdit={onEditTask}
                     onDelete={onDeleteTask}

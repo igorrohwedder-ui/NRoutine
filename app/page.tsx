@@ -241,6 +241,21 @@ export default function Home() {
     });
   }
 
+  async function handleDeleteUpdate(taskId: string, updateId: string) {
+    const previous = updatesByItem;
+    setUpdatesByItem((prev) => {
+      const next = new Map(prev);
+      next.set(taskId, (next.get(taskId) ?? []).filter((u) => u.id !== updateId));
+      return next;
+    });
+
+    const { error } = await supabase.from("routine_item_updates").delete().eq("id", updateId);
+    if (error) {
+      setError(error.message);
+      setUpdatesByItem(previous);
+    }
+  }
+
   // ---------- Operational / recurring tasks ----------
 
   async function handleAddTask(task: NewTask) {
@@ -590,6 +605,7 @@ export default function Home() {
                   onCreateTag={handleCreateTag}
                   updatesByItem={updatesByItem}
                   onAddUpdate={handleAddUpdate}
+                  onDeleteUpdate={handleDeleteUpdate}
                   onToggle={handleToggle}
                   onEdit={handleEditTask}
                   onDelete={handleDeleteTask}
@@ -608,6 +624,7 @@ export default function Home() {
                   onCreateTag={handleCreateTag}
                   updatesByItem={updatesByItem}
                   onAddUpdate={handleAddUpdate}
+                  onDeleteUpdate={handleDeleteUpdate}
                   onToggle={handleToggle}
                   onEdit={handleEditTask}
                   onDelete={handleDeleteTask}
@@ -626,6 +643,7 @@ export default function Home() {
                   onCreateTag={handleCreateTag}
                   updatesByItem={updatesByItem}
                   onAddUpdate={handleAddUpdate}
+                  onDeleteUpdate={handleDeleteUpdate}
                   onToggle={handleToggle}
                   onEdit={handleEditTask}
                   onDelete={handleDeleteTask}
@@ -644,6 +662,7 @@ export default function Home() {
                   onCreateTag={handleCreateTag}
                   updatesByItem={updatesByItem}
                   onAddUpdate={handleAddUpdate}
+                  onDeleteUpdate={handleDeleteUpdate}
                   onUpdate={handleUpdateProject}
                   onDelete={handleDeleteProject}
                   onAddTask={handleAddProjectTask}

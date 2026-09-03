@@ -27,6 +27,7 @@ type Props = {
   /** Newest first. */
   updates: RoutineItemUpdate[];
   onAddUpdate: (taskId: string, text: string) => Promise<void>;
+  onDeleteUpdate: (taskId: string, updateId: string) => Promise<void>;
   /** Human-readable recurrence summary, when this occurrence belongs to a series. */
   recurrenceLabel?: string | null;
   onToggle: (id: string, done: boolean) => void;
@@ -50,6 +51,7 @@ export default function TaskItem({
   onCreateTag,
   updates,
   onAddUpdate,
+  onDeleteUpdate,
   recurrenceLabel,
   onToggle,
   onEdit,
@@ -239,12 +241,22 @@ export default function TaskItem({
                   {updates.map((update) => (
                     <li
                       key={update.id}
-                      className="rounded-lg border border-border bg-surface-2 px-2.5 py-1.5"
+                      className="group/update flex items-start gap-2 rounded-lg border border-border bg-surface-2 px-2.5 py-1.5"
                     >
-                      <p className="whitespace-pre-wrap break-words text-xs text-foreground">{update.text}</p>
-                      <p className="mt-0.5 text-[11px] text-foreground-muted">
-                        {formatUpdateTimestamp(update.created_at)}
-                      </p>
+                      <div className="min-w-0 flex-1">
+                        <p className="whitespace-pre-wrap break-words text-xs text-foreground">{update.text}</p>
+                        <p className="mt-0.5 text-[11px] text-foreground-muted">
+                          {formatUpdateTimestamp(update.created_at)}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => onDeleteUpdate(item.id, update.id)}
+                        aria-label={`Excluir atualização de ${formatUpdateTimestamp(update.created_at)}`}
+                        className={`shrink-0 rounded p-1 text-foreground-muted opacity-0 transition hover:bg-danger-soft hover:text-danger group-hover/update:opacity-100 focus-visible:opacity-100 ${focusRing}`}
+                      >
+                        <Trash2 className="h-3 w-3" aria-hidden="true" />
+                      </button>
                     </li>
                   ))}
                 </ol>
