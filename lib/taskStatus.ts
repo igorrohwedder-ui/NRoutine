@@ -100,3 +100,40 @@ export function formatUpdateTimestamp(iso: string) {
     minute: "2-digit",
   });
 }
+
+/**
+ * A recurring series is only ever supposed to have one open occurrence — the
+ * whole app assumes it (see generateNextOccurrence). When duplicates do slip
+ * in (two tabs, a double submit, or rows created before the database
+ * constraint existed), showing both makes the same task appear twice in the
+ * list. This collapses them for display without touching the stored rows.
+ *
+ * The winner is the earliest due date, since that's the occurrence actually
+ * owed; ties go to the most recently created row, which carries the user's
+ * latest edits.
+ */
+export function dedupeOpenOccurrences(items: RoutineItem[]): RoutineItem[] {
+  const winnerBySeries = new Map<string, RoutineItem>();
+
+  for (const item of items) {
+    if (!item.recurrence_id || item.done) continue;
+
+    const current = winnerBySeries.get(item.recurrence_id);
+    if (!current || beatsCurrentOccurrence(item, current)) {
+      winnerBySeries.set(item.recurrence_id, item);
+    }
+  }
+
+  return items.filter((item) => {
+    if (!item.recurrence_id || item.done) return true;
+    return winnerBySeries.get(item.recurrence_id)?.id === item.id;
+  });
+}
+
+function beatsCurrentOccurrence(candidate: RoutineItem, current: RoutineItem) {
+  // Undated occurrences sort last — a scheduled date is always more specific.
+  const candidateDue = candidate.due_date ?? "9999-12-31";
+  const currentDue = current.due_date ?? "9999-12-31";
+  if (candidateDue !== currentDue) return candidateDue < currentDue;
+  return candidate.created_at > current.created_at;
+}

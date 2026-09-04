@@ -132,6 +132,13 @@ as regras de trabalho e [specs/](specs/) para as especificações atuais.
 - **Título longo esticava o card**: a classe `truncate` no título aplica
   `white-space: nowrap`; como o pai é `flex-col items-start`, o texto
   crescia em vez de quebrar. Mesmo problema latente no nome do projeto.
+- **Tarefa recorrente duplicada em "Tarefas de hoje"** (04/09/2026): a série
+  "Pagamentos do celular" tinha duas ocorrências em aberto, ambas com
+  vencimento 04/09, criadas com 2 minutos de diferença. **Não** era geração
+  automática (ela só roda ao concluir, e nunca devolve a mesma data de
+  origem). A causa raiz é que a trava contra ocorrências duplicadas existe
+  só em JavaScript, baseada no estado do React: não cobre criação, duplo
+  clique nem duas abas abertas. Nada no banco impedia o estado inválido.
 
 ## Soluções aplicadas
 
@@ -141,6 +148,13 @@ as regras de trabalho e [specs/](specs/) para as especificações atuais.
   aberto de cada série (há sempre no máximo uma, por design).
 - `.mcp.json` movido para `/home/igorr/.mcp.json`.
 - Usuário gerou token de acesso pessoal do GitHub para autenticar o push.
+- `dedupeOpenOccurrences` (lib/taskStatus.ts): colapsa, só na exibição,
+  ocorrências em aberto duplicadas da mesma série. Vence a de vencimento
+  mais antigo (é a que está de fato devida — o comportamento pedido para o
+  caso "atrasada + nova"); empate vai para a criada por último, que carrega
+  as edições mais recentes. Ocorrências concluídas nunca são colapsadas, para
+  não mexer no histórico. Aplicada uma vez antes de todas as visões, então
+  as estatísticas também deixam de contar em dobro.
 - Criada a aba/seção "Próximas", reaproveitando `TaskList`/`TaskItem` —
   só o filtro e o agrupamento são novos, o visual do card é o mesmo.
 - Título da tarefa passou de `truncate` para `line-clamp-3 break-words`
@@ -148,6 +162,11 @@ as regras de trabalho e [specs/](specs/) para as especificações atuais.
   componente numa rota temporária e inspecionando o HTML.
 
 ## Pendências
+
+- **Índice único parcial** garantindo no máximo uma ocorrência em aberto por
+  série (`routine_items (recurrence_id) where recurrence_id is not null and
+  not done`). É a correção de raiz — a deduplicação atual é só de exibição.
+  Bloqueado até a duplicata existente ser resolvida.
 
 - Confirmar nome oficial da empresa/cliente que vai usar o NRoutine.
 - Definir qual software será integrado no futuro.

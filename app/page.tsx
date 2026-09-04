@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import type { Priority, Project, Recurrence, RoutineItem, RoutineItemUpdate, Tag } from "@/lib/types";
-import { computeStats, isOverdue, isUpcoming } from "@/lib/taskStatus";
+import { computeStats, dedupeOpenOccurrences, isOverdue, isUpcoming } from "@/lib/taskStatus";
 import {
   computeNextOccurrenceDate,
   firstMonthPeriodOccurrence,
@@ -510,13 +510,17 @@ export default function Home() {
   // ---------- Derived view state ----------
 
   const todayStr = toDateString(now);
+  // Collapse accidental duplicates of the same recurring series before any
+  // view derives from the list, so a duplicated row can't show up twice (or
+  // be counted twice in the stats).
+  const visibleItems = dedupeOpenOccurrences(items);
   // "Today's Tasks": due exactly today, undated, or overdue-and-still-pending.
   // A completed occurrence from a past day (e.g. yesterday's daily task)
   // drops off once the day changes — it's done, it's history, it shouldn't
   // linger in "today". A recurring task due today belongs here too (it's
   // actionable today, same as any one-off task) — intentional overlap with
   // the recurring section below.
-  const todayItems = items.filter((i) => {
+  const todayItems = visibleItems.filter((i) => {
     if (i.project_id) return false;
     if (!i.due_date) return true;
     if (i.due_date === todayStr) return true;
@@ -527,10 +531,10 @@ export default function Home() {
   // complete it, it disappears from here and the freshly generated next one
   // takes its place — even though that next one won't join "Tarefas de hoje"
   // until its own due date arrives.
-  const recurringItems = items.filter((i) => !i.project_id && i.recurrence_id && !i.done);
+  const recurringItems = visibleItems.filter((i) => !i.project_id && i.recurrence_id && !i.done);
 
   const tasksByProject = new Map<string, RoutineItem[]>();
-  for (const item of items) {
+  for (const item of visibleItems) {
     if (!item.project_id) continue;
     if (!tasksByProject.has(item.project_id)) tasksByProject.set(item.project_id, []);
     tasksByProject.get(item.project_id)!.push(item);
@@ -550,13 +554,13 @@ export default function Home() {
   // today-only), so without this list they'd be unreachable until their day.
   // Project tasks are excluded on purpose — those live inside their project.
   const upcomingItems = filterByTag(
-    items.filter((i) => !i.project_id && isUpcoming(i, now)),
+    visibleItems.filter((i) => !i.project_id && isUpcoming(i, now)),
     activeTagId,
   );
 
   // Open-task count per tag, shown next to each tag in the sidebar.
   const tagCounts = new Map<string, number>();
-  for (const item of items) {
+  for (const item of visibleItems) {
     if (item.done) continue;
     for (const tagId of item.tag_ids) {
       tagCounts.set(tagId, (tagCounts.get(tagId) ?? 0) + 1);
