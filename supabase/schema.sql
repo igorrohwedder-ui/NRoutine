@@ -62,6 +62,14 @@ create table if not exists routine_items (
   project_id uuid references projects(id) on delete set null
 );
 
+-- Uma série recorrente só pode ter UMA ocorrência em aberto por vez. O app já
+-- assumia isso, mas a trava existia só em JavaScript — não cobria criação,
+-- duplo clique nem duas abas abertas. Concluídas ficam fora do índice, então
+-- o histórico continua livre.
+create unique index if not exists routine_items_one_open_per_recurrence
+  on routine_items (recurrence_id)
+  where recurrence_id is not null and done = false;
+
 create table if not exists routine_item_updates (
   id uuid primary key default gen_random_uuid(),
   routine_item_id uuid not null references routine_items(id) on delete cascade,

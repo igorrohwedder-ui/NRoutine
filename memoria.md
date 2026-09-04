@@ -155,6 +155,16 @@ as regras de trabalho e [specs/](specs/) para as especificações atuais.
   as edições mais recentes. Ocorrências concluídas nunca são colapsadas, para
   não mexer no histórico. Aplicada uma vez antes de todas as visões, então
   as estatísticas também deixam de contar em dobro.
+- **Índice único parcial** `routine_items_one_open_per_recurrence`: no máximo
+  uma ocorrência em aberto por série, garantido pelo banco. Concluídas ficam
+  fora do índice, então o histórico continua acumulando normalmente. A
+  duplicata existente foi resolvida antes (mantida a linha com a descrição,
+  apagada a vazia, com autorização do usuário).
+- Efeito colateral aceito: **reabrir** uma ocorrência concluída cuja sucessora
+  já foi gerada passa a ser rejeitado pelo banco. O app traduz o erro 23505
+  numa mensagem explicando o motivo, em vez de vazar o erro do Postgres. Em
+  `generateNextOccurrence` o mesmo erro é tratado como benigno (outra aba já
+  gerou) e dispara só um resync.
 - Criada a aba/seção "Próximas", reaproveitando `TaskList`/`TaskItem` —
   só o filtro e o agrupamento são novos, o visual do card é o mesmo.
 - Título da tarefa passou de `truncate` para `line-clamp-3 break-words`
@@ -162,11 +172,6 @@ as regras de trabalho e [specs/](specs/) para as especificações atuais.
   componente numa rota temporária e inspecionando o HTML.
 
 ## Pendências
-
-- **Índice único parcial** garantindo no máximo uma ocorrência em aberto por
-  série (`routine_items (recurrence_id) where recurrence_id is not null and
-  not done`). É a correção de raiz — a deduplicação atual é só de exibição.
-  Bloqueado até a duplicata existente ser resolvida.
 
 - Confirmar nome oficial da empresa/cliente que vai usar o NRoutine.
 - Definir qual software será integrado no futuro.

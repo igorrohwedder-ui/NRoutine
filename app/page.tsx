@@ -115,6 +115,9 @@ async function replaceTagsForItem(itemId: string, tagIds: string[]) {
   }
 }
 
+/** Postgres unique-violation — here it means the series already has an open occurrence. */
+const UNIQUE_VIOLATION = "23505";
+
 export default function Home() {
   const [items, setItems] = useState<RoutineItem[]>([]);
   const [recurrences, setRecurrences] = useState<Map<string, Recurrence>>(new Map());
@@ -378,7 +381,15 @@ export default function Home() {
       .select()
       .single();
 
-    if (!error && data) {
+    if (error) {
+      // The database rejects a second open occurrence for the same series, so
+      // this means another tab (or a double click) already generated it. Not
+      // worth surfacing — just resync so the list shows the one that exists.
+      if (error.code === UNIQUE_VIOLATION) loadItems();
+      return;
+    }
+
+    if (data) {
       await attachTagsToItem(data.id, completedItem.tag_ids);
       setItems((prev) => [...prev, { ...data, tag_ids: completedItem.tag_ids }]);
     }
@@ -389,7 +400,11 @@ export default function Home() {
     setItems((prev) => prev.map((i) => (i.id === id ? { ...i, done } : i)));
     const { error } = await supabase.from("routine_items").update({ done }).eq("id", id);
     if (error) {
-      setError(error.message);
+      setError(
+        error.code === UNIQUE_VIOLATION
+          ? "Não dá para reabrir esta ocorrência: a próxima da série já foi gerada. Conclua ou exclua a próxima antes."
+          : error.message,
+      );
       loadItems();
       return;
     }
